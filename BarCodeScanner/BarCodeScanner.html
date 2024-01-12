@@ -1,48 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Barcode Scanner</title>
+    <title>QR Code Reader</title>
+    <style>
+        #cameraStream {
+            width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
-    <input type="file" id="imageInput" accept="image/*">
-    <button id="scanButton">Scan Barcode</button>
-    <p id="result"></p>
 
-    <script>
-        document.getElementById('scanButton').addEventListener('click', function() {
-            const imageInput = document.getElementById('imageInput');
-            if (imageInput.files && imageInput.files[0]) {
-                const imageFile = imageInput.files[0];
-                scanBarcode(imageFile);
-            } else {
-                alert('Please select an image file first.');
-            }
-        });
+<video id="cameraStream" autoplay></video>
+<button id="startButton">Start Camera</button>
 
-        async function scanBarcode(imageFile) {
-            let resultElement = document.getElementById('result');
-            resultElement.textContent = 'Scanning...';
+<script>
+    const video = document.getElementById('cameraStream');
+    const startButton = document.getElementById('startButton');
 
-            try {
-                const imageBitmap = await createImageBitmap(imageFile);
-                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128'] });
-                const barcodes = await barcodeDetector.detect(imageBitmap);
+    startButton.onclick = function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Adjust constraints for better QR code reading
+            const constraints = {
+                video: { facingMode: 'environment' }
+            };
 
-                if (barcodes.length === 0) {
-                    resultElement.textContent = 'No barcodes found.';
-                    return;
-                }
+            navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                video.srcObject = stream;
+                video.play();
 
-                resultElement.textContent = `Found ${barcodes.length} barcode(s): ` + 
-                    barcodes.map(barcode => barcode.rawValue).join(', ');
-            } catch (err) {
-                resultElement.textContent = `Error: ${err.message || err}`;
-            }
+                // Start reading the QR code from the video stream
+                startReadingQRCode(stream);
+            }).catch(function(error) {
+                console.log("Error accessing camera: ", error);
+            });
+        } else {
+            alert('Your browser does not support media devices.');
+            return;
         }
-    </script>
+    };
+
+    function startReadingQRCode(stream) {
+        // This function should contain the logic to read QR codes
+        // from the stream. This could be a continuous process where
+        // the stream is scanned at regular intervals, or an event-based
+        // approach where the scanning is triggered by an event.
+        
+        // Example: Call a function from the QR code library to start decoding
+        // decodeQRFromStream(stream);
+    }
+</script>
+
 </body>
 </html>
-
-
 
 
