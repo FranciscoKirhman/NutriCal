@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Automatic Barcode Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        /* Add your styling here */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #imageInput {
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #result {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="imageInput" accept="image/*">
+    <p id="result"></p>
+    <div id="nutritionalInfo"></div>
+
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function() {
+            const imageInput = document.getElementById('imageInput');
+            if (imageInput.files && imageInput.files[0]) {
+                const imageFile = imageInput.files[0];
+                scanBarcode(imageFile);
+            }
+        });
+
+        async function scanBarcode(imageFile) {
+            let resultElement = document.getElementById('result');
+            resultElement.textContent = 'Scanning...';
+
+            try {
+                const imageBitmap = await createImageBitmap(imageFile);
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128'] });
+                const barcodes = await barcodeDetector.detect(imageBitmap);
+
+                if (barcodes.length === 0) {
+                    resultElement.textContent = 'No barcodes found.';
+                    return;
+                }
+
+                const barcode = barcodes[0].rawValue;
+                resultElement.textContent = `Found Barcode: ${barcode}`;
+                fetchNutritionalInfo(barcode);
+            } catch (err) {
+                resultElement.textContent = `Error: ${err.message || err}`;
+            }
+        }
+
+        function fetchNutritionalInfo(barcode) {
+            fetch(`https://world.openfoodfacts.net/api/v2/product/${barcode}`)
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response data
+                displayNutritionalInfo(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('nutritionalInfo').textContent = 'Error fetching data.';
+            });
+        }
+
+        function displayNutritionalInfo(data) {
+            // Displaying the nutritional information
+            if(data && data.product) {
+                let product = data.product;
+                let nutritionalHtml = `<h3>${product.product_name}</h3>`;
+                nutritionalHtml += '<table border="1">';
+                for(let key in product.nutriments) {
+                    nutritionalHtml += `<tr><td>${key}</td><td>${product.nutriments[key]}</td></tr>`;
+                }
+                nutritionalHtml += '</table>';
+                document.getElementById('nutritionalInfo').innerHTML = nutritionalHtml;
+            } else {
+                document.getElementById('nutritionalInfo').textContent = 'No nutritional data found for this product.';
+            }
+        }
+    </script>
+</body>
+</html>
