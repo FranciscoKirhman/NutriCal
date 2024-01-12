@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Use Your Phone's QR Scanner</title>
+    <style>
+        .container {
+            text-align: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .instructions {
+            margin: 20px;
+            font-size: 18px;
+        }
+        #qrInput {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #submitBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="instructions">
+            Please open your camera app and scan the QR code. Then return to this page and enter the scanned data.
+        </div>
+        <input type="text" id="qrInput" placeholder="Enter scanned data here">
+        <button id="submitBtn">Submit</button>
+    </div>
+
+    <script>
+        document.getElementById('submitBtn').onclick = function() {
+            var scannedData = document.getElementById('qrInput').value;
+            console.log("Scanned QR Data: " + scannedData);
+            // Process the scanned data as needed
+        };
+    </script>
+</body>
+</html>
