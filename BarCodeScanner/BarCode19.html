@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Access and QR Code Reader</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #startButton {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #startButton:hover {
+            background-color: #45a049;
+        }
+        #cameraStream {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<video id="cameraStream" autoplay style="display:none;"></video>
+<button id="startButton">Start Camera</button>
+<p id="qrCodeText">QR Code Data: None</p>
+
+<script>
+    const video = document.getElementById('cameraStream');
+    const startButton = document.getElementById('startButton');
+    const qrCodeText = document.getElementById('qrCodeText');
+    let scanning = false;
+
+    startButton.onclick = function() {
+        if (scanning) {
+            video.style.display = "none";
+            startButton.textContent = "Start Camera";
+            scanning = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        } else {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const constraints = { video: { facingMode: 'environment' } };
+                navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                    video.style.display = "block";
+                    startButton.textContent = "Stop Camera";
+                    scanning = true;
+                    scanQRCode();
+                }).catch(function(error) {
+                    console.log("Error accessing camera: ", error);
+                });
+            } else {
+                alert('Your browser does not support media devices.');
+                return;
+            }
+        }
+    };
+
+    function scanQRCode() {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+        if (code) {
+            qrCodeText.textContent = 'QR Code Data: ' + code.data;
+        } else {
+            qrCodeText.textContent = 'QR Code Data: None';
+        }
+        if (scanning) {
+            requestAnimationFrame(scanQRCode);
+        }
+    }
+</script>
+
+</body>
+</html>
