@@ -4,24 +4,59 @@
     <title>Automatic Barcode Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
     <style>
-        /* Add your styling here */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
         }
-        #imageInput {
-            margin-bottom: 20px;
-            padding: 10px;
+
+        .button {
+            padding: 15px 30px;
             font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
         }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
         #result {
             font-size: 18px;
+            margin-top: 20px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        #imageInputLabel {
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        #imageInputLabel:hover {
+            background-color: #45a049;
+        }
+
+        #nutritionalInfo {
             margin-top: 20px;
         }
     </style>
 </head>
 <body>
+    <label for="imageInput" id="imageInputLabel" class="button">Select Image File</label>
     <input type="file" id="imageInput" accept="image/*">
     <p id="result"></p>
     <div id="nutritionalInfo"></div>
@@ -58,10 +93,9 @@
         }
 
         function fetchNutritionalInfo(barcode) {
-            fetch(`https://world.openfoodfacts.net/api/v2/product/${barcode}`)
+            fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}`)
             .then(response => response.json())
             .then(data => {
-                // Handle the response data
                 displayNutritionalInfo(data);
             })
             .catch(error => {
@@ -71,20 +105,23 @@
         }
 
         function displayNutritionalInfo(data) {
-            // Displaying the nutritional information
-            if(data && data.product) {
-                let product = data.product;
-                let nutritionalHtml = `<h3>${product.product_name}</h3>`;
-                nutritionalHtml += '<table border="1">';
-                for(let key in product.nutriments) {
-                    nutritionalHtml += `<tr><td>${key}</td><td>${product.nutriments[key]}</td></tr>`;
+            const nutritionalInfoDiv = document.getElementById('nutritionalInfo');
+            if (data.status === 1 && data.product) {
+                const product = data.product;
+                let htmlContent = `<h3>${product.product_name || 'Unknown Product'}</h3>`;
+                htmlContent += `<table border="1"><tr><th>Nutrient</th><th>Value</th></tr>`;
+
+                for (let key in product.nutriments) {
+                    htmlContent += `<tr><td>${key}</td><td>${product.nutriments[key]}</td></tr>`;
                 }
-                nutritionalHtml += '</table>';
-                document.getElementById('nutritionalInfo').innerHTML = nutritionalHtml;
+
+                htmlContent += '</table>';
+                nutritionalInfoDiv.innerHTML = htmlContent;
             } else {
-                document.getElementById('nutritionalInfo').textContent = 'No nutritional data found for this product.';
+                nutritionalInfoDiv.textContent = 'No nutritional data found for this product.';
             }
         }
     </script>
 </body>
 </html>
+
