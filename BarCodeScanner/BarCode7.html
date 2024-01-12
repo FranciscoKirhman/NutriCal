@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Code Reader</title>
+    <style>
+        #cameraStream {
+            width: 100%;
+            height: auto;
+        }
+
+        #startButton {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            outline: none;
+            color: #fff;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 9px #999;
+        }
+
+        #startButton:hover {background-color: #3e8e41}
+
+        #startButton:active {
+            background-color: #3e8e41;
+            box-shadow: 0 5px #666;
+            transform: translateY(4px);
+        }
+    </style>
+</head>
+<body>
+
+<video id="cameraStream" autoplay></video>
+<button id="startButton">Start Camera</button>
+
+<script>
+    const video = document.getElementById('cameraStream');
+    const startButton = document.getElementById('startButton');
+
+    startButton.onclick = function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const constraints = {
+                video: { facingMode: 'environment' }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+                startReadingQRCode(stream);
+            }).catch(function(error) {
+                console.log("Error accessing camera: ", error);
+            });
+        } else {
+            alert('Your browser does not support media devices.');
+            return;
+        }
+    };
+
+    function startReadingQRCode(stream) {
+        // Implement the QR code reading logic here
+    }
+</script>
+
+</body>
+</html>
