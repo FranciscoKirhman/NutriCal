@@ -1,45 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Camera Access for QR Code</title>
-    <style>
-        #cameraInput {
-            padding: 15px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+    <title>Barcode Scanner</title>
 </head>
 <body>
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="scanButton">Scan Barcode</button>
+    <p id="result"></p>
 
-<input type="file" accept="image/*" capture="environment" id="cameraInput" name="cameraInput" style="display: none;">
-<label for="cameraInput" style="border: 1px solid black; padding: 10px; display: inline-block; cursor: pointer;">
-    Scan QR Code
-</label>
-<img id="photo" src="" alt="The screen capture will appear in this box." style="display: block; margin-top: 20px;">
+    <script>
+        document.getElementById('scanButton').addEventListener('click', function() {
+            const imageInput = document.getElementById('imageInput');
+            if (imageInput.files && imageInput.files[0]) {
+                const imageFile = imageInput.files[0];
+                scanBarcode(imageFile);
+            } else {
+                alert('Please select an image file first.');
+            }
+        });
 
-<script>
-    const cameraInput = document.getElementById('cameraInput');
-    const photo = document.getElementById('photo');
+        async function scanBarcode(imageFile) {
+            let resultElement = document.getElementById('result');
+            resultElement.textContent = 'Scanning...';
 
-    cameraInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+            try {
+                const imageBitmap = await createImageBitmap(imageFile);
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128'] });
+                const barcodes = await barcodeDetector.detect(imageBitmap);
 
-        reader.onloadend = function() {
-            photo.src = reader.result;
-        };
+                if (barcodes.length === 0) {
+                    resultElement.textContent = 'No barcodes found.';
+                    return;
+                }
 
-        if (file) {
-            reader.readAsDataURL(file);
-        } else {
-            photo.src = "";
+                resultElement.textContent = `Found ${barcodes.length} barcode(s): ` + 
+                    barcodes.map(barcode => barcode.rawValue).join(', ');
+            } catch (err) {
+                resultElement.textContent = `Error: ${err.message || err}`;
+            }
         }
-    });
-</script>
-
+    </script>
 </body>
 </html>
+
 
 
 
