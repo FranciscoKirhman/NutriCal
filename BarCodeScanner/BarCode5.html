@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Code Reader</title>
+    <style>
+        #cameraStream {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<video id="cameraStream" autoplay></video>
+<button id="startButton">Start Camera</button>
+
+<script>
+    const video = document.getElementById('cameraStream');
+    const startButton = document.getElementById('startButton');
+
+    startButton.onclick = function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Adjust constraints for better QR code reading
+            const constraints = {
+                video: { facingMode: 'environment' }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+
+                // Start reading the QR code from the video stream
+                startReadingQRCode(stream);
+            }).catch(function(error) {
+                console.log("Error accessing camera: ", error);
+            });
+        } else {
+            alert('Your browser does not support media devices.');
+            return;
+        }
+    };
+
+    function startReadingQRCode(stream) {
+        // This function should contain the logic to read QR codes
+        // from the stream. This could be a continuous process where
+        // the stream is scanned at regular intervals, or an event-based
+        // approach where the scanning is triggered by an event.
+        
+        // Example: Call a function from the QR code library to start decoding
+        // decodeQRFromStream(stream);
+    }
+</script>
+
+</body>
+</html>
