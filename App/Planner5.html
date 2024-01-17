@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Scheduler with Nutritional Info Adjustment</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .button {
+            padding: 10px 15px;
+            font-size: 14px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        #food-search {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid black;
+            z-index: 1000;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #result, #barcode-result {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        #barcode-image-input {
+            display: none;
+        }
+
+        .search-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input[type="text"], .nutrition-input input[type="number"] {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 5px;
+        }
+
+        .nutrition-input {
+            margin-top: 10px;
+        }
+
+        #nutritionalInfo {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Food Scheduler</h1>
+
+    <div id="desayuno">
+        <h2>Desayuno</h2>
+        <button onclick="showSearch('desayuno')">+</button>
+        <div id="desayuno-items"></div>
+    </div>
+
+    <div id="almuerzo">
+        <h2>Almuerzo</h2>
+        <button onclick="showSearch('almuerzo')">+</button>
+        <div id="almuerzo-items"></div>
+    </div>
+
+    <div id="once">
+        <h2>Once</h2>
+        <button onclick="showSearch('once')">+</button>
+        <div id="once-items"></div>
+    </div>
+
+    <div id="cena">
+        <h2>Cena</h2>
+        <button onclick="showSearch('cena')">+</button>
+        <div id="cena-items"></div>
+    </div>
+
+    <div id="food-search">
+        <div class="search-bar">
+            <input type="text" id="food-input" placeholder="Search for food...">
+            <button onclick="searchFood()">Search</button>
+            <label for="barcode-image-input" class="button">Scan Barcode</label>
+        </div>
+        <input type="file" id="barcode-image-input" accept="image/*">
+        <p id="result"></p>
+        <button onclick="closeSearch()">Close</button>
+        <div id="nutritionalInfo"></div>
+    </div>
+
+    <div class="overlay" onclick="closeSearch()" style="display: none;"></div>
+
+    <script>
+        var currentMeal = '';
+
+        function showSearch(meal) {
+            currentMeal = meal;
+            document.getElementById('food-search').style.display = 'block';
+            document.querySelector('.overlay').style.display = 'block';
+        }
+
+        function closeSearch() {
+            document.getElementById('food-search').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
+        }
+
+        function addFood(foodItem) {
+            const item = document.createElement('div');
+            item.textContent = foodItem;
+            document.getElementById(currentMeal + '-items').appendChild(item);
+            closeSearch();
+        }
+
+        function searchFood() {
+            const searchTerm = document.getElementById('food-input').value;
+            console.log('Searching for:', searchTerm);
+            addFood(searchTerm);
+        }
+
+        document.getElementById('barcode-image-input').addEventListener('change', function() {
+            const imageInput = document.getElementById('barcode-image-input');
+            if (imageInput.files && imageInput.files[0]) {
+                const imageFile = imageInput.files[0];
+                scanBarcode(imageFile);
+            }
+        });
+
+        async function scanBarcode(imageFile) {
+            let resultElement = document.getElementById('result');
+            resultElement.textContent = 'Scanning...';
+
+            try {
+                const imageBitmap = await createImageBitmap(imageFile);
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128'] });
+                const barcodes = await barcodeDetector.detect(imageBitmap);
+
+                if (barcodes.length === 0) {
+                    resultElement.textContent = 'No barcodes found.';
+                    return;
+                }
+
+                const barcode = barcodes[0].rawValue;
+                resultElement.textContent = `Found Barcode: ${barcode}`;
+                fetchNutritionalInfo(barcode);
+            } catch (err) {
+                resultElement.textContent = `Error: ${err.message || err}`;
+            }
+        }
+
+        function fetchNutritionalInfo(barcode) {
+            fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}`)
+            .then(response => response.json())
+            .then(data => {
+                displayNutritionalInfo(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('nutritionalInfo').textContent = 'Error fetching data.';
+            });
+        }
+
+        function displayNutritionalInfo(data) {
+            const nutritionalInfoDiv = document.getElementById('nutritionalInfo');
+            if (data.status === 1 && data.product) {
+                const product = data.product;
+                let htmlContent = `<h3>${product.product_name || 'Unknown Product'}</h3>`;
+                htmlContent += `<table border="1" id="nutritional-table"><tr><th>Nutrient</th><th>Value per 100g</th><th>Adjusted Value</th></tr>`;
+
+                for (let key in product.nutriments) {
+                    htmlContent += `<tr><td>${key}</td><td>${product.nutriments[key]}</td><td id="${key}-adjusted"></td></tr>`;
+                }
+
+                htmlContent += '</table>';
+                nutritionalInfoDiv.innerHTML = htmlContent;
+
+                // Add input field for quantity and calculate button
+                nutritionalInfoDiv.innerHTML += `
+                    <div class="nutrition-input">
+                        <input type="number" id="food-quantity" placeholder="Enter quantity in grams">
+                        <button onclick="adjustNutritionalValues()">Calculate</button>
+                    </div>`;
+            } else {
+                nutritionalInfoDiv.textContent = 'No nutritional data found for this product.';
+            }
+        }
+
+        function adjustNutritionalValues() {
+            const quantity = document.getElementById('food-quantity').value;
+            const table = document.getElementById('nutritional-table');
+            if (table && quantity) {
+                for (let row of table.rows) {
+                    if (row.cells.length === 3) {
+                        const nutrientValue = parseFloat(row.cells[1].innerText);
+                        const adjustedValue = (nutrientValue * quantity / 100).toFixed(2);
+                        row.cells[2].innerText = adjustedValue;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
