@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Scheduler with Barcode Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .button {
+            padding: 15px 30px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        #food-search, #barcode-scanner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid black;
+            z-index: 1000;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #result, #barcode-result {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        #imageInput, #barcode-image-input {
+            display: none;
+        }
+
+        #imageInputLabel, #barcode-image-label {
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        #imageInputLabel:hover, #barcode-image-label:hover {
+            background-color: #45a049;
+        }
+
+        #nutritionalInfo {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Food Scheduler</h1>
+
+    <div id="desayuno">
+        <h2>Desayuno</h2>
+        <button onclick="showSearch('desayuno')">+</button>
+        <div id="desayuno-items"></div>
+    </div>
+
+    <div id="almuerzo">
+        <h2>Almuerzo</h2>
+        <button onclick="showSearch('almuerzo')">+</button>
+        <div id="almuerzo-items"></div>
+    </div>
+
+    <div id="once">
+        <h2>Once</h2>
+        <button onclick="showSearch('once')">+</button>
+        <div id="once-items"></div>
+    </div>
+
+    <div id="cena">
+        <h2>Cena</h2>
+        <button onclick="showSearch('cena')">+</button>
+        <div id="cena-items"></div>
+    </div>
+    <!-- Food Search and Barcode Scanner Pop-up -->
+    <div id="food-search">
+        <!-- Search Bar -->
+        <input type="text" id="food-input" placeholder="Search for food...">
+        <button onclick="searchFood()">Search</button>
+        <button onclick="closeSearch()">Close</button>
+
+        <!-- Barcode Scanner -->
+        <div id="barcode-scanner">
+            <label for="barcode-image-input" id="barcode-image-label" class="button">Scan Barcode</label>
+            <input type="file" id="barcode-image-input" accept="image/*">
+            <p id="barcode-result"></p>
+            <div id="nutritionalInfo"></div>
+        </div>
+    </div>
+
+    <!-- Overlay for Pop-up -->
+    <div class="overlay" onclick="closeSearch()" style="display: none;"></div>
+
+    <!-- JavaScript for Interactivity -->
+    <script>
+        var currentMeal = '';
+
+        // Function to show the search and barcode scanner pop-up
+        function showSearch(meal) {
+            currentMeal = meal;
+            document.getElementById('food-search').style.display = 'block';
+            document.getElementById('barcode-scanner').style.display = 'block';
+            document.querySelector('.overlay').style.display = 'block';
+        }
+
+        // Function to close the pop-up
+        function closeSearch() {
+            document.getElementById('food-search').style.display = 'none';
+            document.getElementById('barcode-scanner').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
+        }
+
+        // Function to add food item to the meal section
+        function addFood(foodItem) {
+            const item = document.createElement('div');
+            item.textContent = foodItem;
+            document.getElementById(currentMeal + '-items').appendChild(item);
+            closeSearch();
+        }
+
+        // Function to search food items
+        function searchFood() {
+            const searchTerm = document.getElementById('food-input').value;
+            console.log('Searching for:', searchTerm);
+            // Simulating adding a food item
+            addFood(searchTerm);
+        }
+
+        // Event listener for barcode image input
+        document.getElementById('barcode-image-input').addEventListener('change', function() {
+            const imageInput = document.getElementById('barcode-image-input');
+            if (imageInput.files && imageInput.files[0]) {
+                const imageFile = imageInput.files[0];
+                scanBarcode(imageFile);
+            }
+        });
+
+        // Function to scan barcode
+        async function scanBarcode(imageFile) {
+            let resultElement = document.getElementById('barcode-result');
+            resultElement.textContent = 'Scanning...';
+
+            try {
+                const imageBitmap = await createImageBitmap(imageFile);
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128'] });
+                const barcodes = await barcodeDetector.detect(imageBitmap);
+
+                if (barcodes.length === 0) {
+                    resultElement.textContent = 'No barcodes found.';
+                    return;
+                }
+
+                const barcode = barcodes[0].rawValue;
+                resultElement.textContent = `Found Barcode: ${barcode}`;
+                fetchNutritionalInfo(barcode);
+            } catch (err) {
+                resultElement.textContent = `Error: ${err.message || err}`;
+            }
+        }
+
+        // Function to fetch nutritional info
+        function fetchNutritionalInfo(barcode) {
+            // Fetching data from Open Food Facts API
+            fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}`)
+            .then(response => response.json())
+            .then(data => {
+                displayNutritionalInfo(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('nutritionalInfo').textContent = 'Error fetching data.';
+            });
+        }
+
+        // Function to display nutritional info
+        function displayNutritionalInfo(data) {
+            const nutritionalInfoDiv = document.getElementById('nutritionalInfo');
+            if (data.status === 1 && data.product) {
+                const product = data.product;
+                let htmlContent = `<h3>${product.product_name || 'Unknown Product'}</h3>`;
+                htmlContent += `<table border="1"><tr><th>Nutrient</th><th>Value</th></tr>`;
+
+                for (let key in product.nutriments) {
+                    htmlContent += `<tr><td>${key}</td><td>${product.nutriments[key]}</td></tr>`;
+                }
+
+                htmlContent += '</table>';
+                nutritionalInfoDiv.innerHTML = htmlContent;
+            } else {
+                nutritionalInfoDiv.textContent = 'No nutritional data found for this product.';
+            }
+        }
+    </script>
+</body>
+</html>
