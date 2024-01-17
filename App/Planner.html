@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Scheduler</title>
+    <!-- Add any CSS or JS links here -->
+</head>
+<body>
+    <h1>Food Scheduler</h1>
+
+    <div id="desayuno">
+        <h2>Desayuno</h2>
+        <button onclick="addFood('desayuno')">+</button>
+        <div id="desayuno-items"></div>
+    </div>
+
+    <div id="almuerzo">
+        <h2>Almuerzo</h2>
+        <button onclick="addFood('almuerzo')">+</button>
+        <div id="almuerzo-items"></div>
+    </div>
+
+    <div id="once">
+        <h2>Once</h2>
+        <button onclick="addFood('once')">+</button>
+        <div id="once-items"></div>
+    </div>
+
+    <div id="cena">
+        <h2>Cena</h2>
+        <button onclick="addFood('cena')">+</button>
+        <div id="cena-items"></div>
+    </div>
+    
+    <!-- Search bar and add food functionality -->
+    <div id="food-search">
+        <input type="text" id="food-input" placeholder="Search for food...">
+        <button onclick="searchFood()">Search</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
