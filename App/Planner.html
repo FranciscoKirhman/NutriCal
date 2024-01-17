@@ -3,40 +3,92 @@
 <head>
     <title>Food Scheduler</title>
     <!-- Add any CSS or JS links here -->
+    <style>
+        #food-search {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid black;
+            z-index: 1000;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
 </head>
 <body>
     <h1>Food Scheduler</h1>
 
     <div id="desayuno">
         <h2>Desayuno</h2>
-        <button onclick="addFood('desayuno')">+</button>
+        <button onclick="showSearch('desayuno')">+</button>
         <div id="desayuno-items"></div>
     </div>
 
     <div id="almuerzo">
         <h2>Almuerzo</h2>
-        <button onclick="addFood('almuerzo')">+</button>
+        <button onclick="showSearch('almuerzo')">+</button>
         <div id="almuerzo-items"></div>
     </div>
 
     <div id="once">
         <h2>Once</h2>
-        <button onclick="addFood('once')">+</button>
+        <button onclick="showSearch('once')">+</button>
         <div id="once-items"></div>
     </div>
 
     <div id="cena">
         <h2>Cena</h2>
-        <button onclick="addFood('cena')">+</button>
+        <button onclick="showSearch('cena')">+</button>
         <div id="cena-items"></div>
     </div>
-    
-    <!-- Search bar and add food functionality -->
+
     <div id="food-search">
         <input type="text" id="food-input" placeholder="Search for food...">
         <button onclick="searchFood()">Search</button>
+        <button onclick="closeSearch()">Close</button>
     </div>
 
-    <script src="script.js"></script>
+    <div class="overlay" onclick="closeSearch()" style="display: none;"></div>
+
+    <script>
+        var currentMeal = '';
+
+        function showSearch(meal) {
+            currentMeal = meal;
+            document.getElementById('food-search').style.display = 'block';
+            document.querySelector('.overlay').style.display = 'block';
+        }
+
+        function closeSearch() {
+            document.getElementById('food-search').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
+        }
+
+        function addFood(foodItem) {
+            const item = document.createElement('div');
+            item.textContent = foodItem;
+            document.getElementById(currentMeal + '-items').appendChild(item);
+            closeSearch();
+        }
+
+        function searchFood() {
+            const searchTerm = document.getElementById('food-input').value;
+            console.log('Searching for:', searchTerm);
+            // Simulating adding a food item. Replace with database interaction later.
+            addFood(searchTerm);
+        }
+    </script>
 </body>
 </html>
+
