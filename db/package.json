@@ -4,7 +4,7 @@
   "description": "A Node.js application to connect to an Oracle database",
   "main": "connection.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node connection.js"
   },
   "author": "Your Name",
   "license": "ISC",
