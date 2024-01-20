@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch Data from Node.js Server</title>
+    <script>
+        // Function to fetch data from your Node.js server
+        function fetchData() {
+            fetch('https://your-node-js-server.com/query') // Replace with your actual server URL
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Handle the response data
+                    console.log(data);
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                });
+        }
+    </script>
+</head>
+<body>
+    <h1>Oracle Database Data</h1>
+    <button onclick="fetchData()">Fetch Data</button>
+    <pre id="data"></pre> <!-- This element will display the fetched data -->
+</body>
+</html>
