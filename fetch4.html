@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch Data from Node.js Server</title>
+    <script>
+        // Helper function to display messages on the page
+        function displayMessage(message, isError = false) {
+            const messageElement = document.getElementById('messages');
+            const newMessageElement = document.createElement('div');
+            newMessageElement.textContent = message;
+            if (isError) {
+                newMessageElement.style.color = 'red';
+            } else {
+                newMessageElement.style.color = 'green'; // Add color for success messages
+            }
+            messageElement.appendChild(newMessageElement);
+        }
+
+        // Function to fetch data from your Node.js server
+        function fetchData() {
+            displayMessage("Fetch button clicked, sending request...");
+            fetch('http://146.235.244.214:3000/query') // Updated with your actual server URL
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Handle the response data
+                    displayMessage("Data received successfully");
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    displayMessage('Fetch error: ' + error.message, true);
+                });
+        }
+    </script>
+</head>
+<body>
+    <h1>Oracle Database Data</h1>
+    <button onclick="fetchData()">Fetch Data</button>
+    <div id="messages"></div> <!-- This element will display messages -->
+    <pre id="data"></pre> <!-- This element will display the fetched data -->
+</body>
+</html>
