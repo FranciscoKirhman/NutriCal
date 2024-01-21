@@ -25,7 +25,7 @@ app.get('/query', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     // Replace 'your_table' with your actual table name
-    const result = await connection.execute(`SELECT * FROM your_table WHERE rownum <= 10`);
+    const result = await connection.execute(`SELECT * FROM Nutrientes WHERE rownum <= 10`);
 
     // Send the query results back to the client
     res.json(result.rows);
