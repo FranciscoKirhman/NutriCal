@@ -7,7 +7,7 @@ const cors = require('cors');
 const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  connectString: process.env.DB_CONNECT_STRING // Example: 'localhost/orcl'
+  connectString: gcb99637f1c00f0_tabla1_high.adb.oraclecloud.com // Example: 'localhost/orcl'
 };
 
 // Initialize the application
