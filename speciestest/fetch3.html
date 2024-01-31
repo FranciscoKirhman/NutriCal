@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch Data from Node.js Server</title>
+    <script>
+        function fetchData() {
+            const searchParams = new URLSearchParams();
+            document.querySelectorAll('.search-input').forEach(input => {
+                if (input.value) {
+                    searchParams.append(input.name, input.value);
+                }
+            });
+
+            displayMessage("Fetch button clicked, sending request...");
+
+            // Use the HTTPS protocol and the correct server address
+            fetch('https://speciesdb.ddns.net/query?' + searchParams.toString())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayMessage("Data received successfully");
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    displayMessage('Fetch error: ' + error.message, true);
+                });
+        }
+
+        function displayMessage(message, isError = false) {
+            const messageElement = document.getElementById('messages');
+            messageElement.innerHTML = ''; // Clear previous messages
+            const newMessageElement = document.createElement('div');
+            newMessageElement.textContent = message;
+            newMessageElement.style.color = isError ? 'red' : 'green';
+            messageElement.appendChild(newMessageElement);
+        }
+
+        function clearData() {
+            document.getElementById('data').textContent = '';
+            document.getElementById('messages')..innerHTML = '';
+            document.querySelectorAll('.search-input').forEach(input => input.value = '');
+        }
+    </script>
+</head>
+<body>
+    <h1>Species Database Query</h1>
+    <div>
+        <input type="text" class="search-input" name="ID" placeholder="ID">
+        <input type="text" class="search-input" name="GENUS" placeholder="Genus">
+        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet">
+        <input type="text" class="search-input" name="SPECIES" placeholder="Species">
+        <input type="text" class="search-input" name="TYPE" placeholder="Type">
+        <input type="text" class="search-input" name="ORIGIN" placeholder="Origin">
+        <input type="text" class="search-input" name="DISTRIBUTION" placeholder="Distribution">
+        <input type="text" class="search-input" name="ALTITUDINAL_INFERIOR" placeholder="Altitudinal Inferior">
+        <input type="text" class="search-input" name="ALTITUDINAL_SUPERIOR" placeholder="Altitudinal Superior">
+        <input type="text" class="search-input" name="DISTRIBUTION_NORTH" placeholder="Distribution North">
+        <input type="text" class="search-input" name="DISTRIBUTION_SOUTH" placeholder="Distribution South">
+    </div>
+    <button onclick="fetchData()">Fetch Data</button>
+    <button onclick="clearData()">Clear Data</button>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+</body>
+</html>
