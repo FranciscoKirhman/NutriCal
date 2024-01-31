@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch Data from Node.js Server</title>
+    <script>
+        function displayMessage(message, isError = false) {
+            const messageElement = document.getElementById('messages');
+            const newMessageElement = document.createElement('div');
+            newMessageElement.textContent = message;
+            if (isError) {
+                newMessageElement.style.color = 'red';
+            } else {
+                newMessageElement.style.color = 'green';
+            }
+            messageElement.appendChild(newMessageElement);
+        }
+
+        function fetchData() {
+            const userInput = document.getElementById('userInput').value;
+            displayMessage("Fetch button clicked, sending request...");
+
+            // Send the user input as a query parameter
+            fetch('https://speciesdb.ddns.net/query?column=' + encodeURIComponent(userInput))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayMessage("Data received successfully");
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    displayMessage('Fetch error: ' + error.message, true);
+                });
+        }
+    </script>
+</head>
+<body>
+    <h1>Oracle Database Data</h1>
+    <input type="text" id="userInput" placeholder="Enter column name">
+    <button onclick="fetchData()">Fetch Data</button>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+</body>
+</html>
