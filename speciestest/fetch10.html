@@ -131,43 +131,39 @@
             }
         });
 
-        // Updated Autocomplete setup for each search-input with a corresponding datalist
-    document.querySelectorAll('.search-input').forEach(input => {
-        if (input.getAttribute('list')) { // Check if the input has 'list' attribute
-            setupAutocomplete(input, input.getAttribute('list'));
-        }
-    });
-
-    function setupAutocomplete(inputElement, dataListId) {
-        inputElement.addEventListener('input', function() {
-            const value = this.value;
-            if (value.length < 1) {
-                const dataList = document.getElementById(dataListId);
-                dataList.innerHTML = ''; // Clear existing options
-                return;
-            }
-            fetch(`https://speciesdb.ddns.net/autocomplete?column=${inputElement.name}&prefix=${value}`)
-                .then(response => response.json())
-                .then(items => {
+        // Improved Autocomplete setup
+        document.querySelectorAll('.search-input').forEach(input => {
+            if (input.getAttribute('list')) {
+                input.addEventListener('input', function() {
+                    const value = this.value;
+                    const dataListId = this.getAttribute('list');
                     const dataList = document.getElementById(dataListId);
-                    dataList.innerHTML = ''; // Clear existing options
-                    items.forEach(item => {
-                        // Make sure the item is not null and starts with the typed letter
-                        if (item !== null && item.toString().toLowerCase().startsWith(value.toLowerCase())) {
-                            let option = document.createElement('option');
-                            option.value = item;
-                            dataList.appendChild(option);
-                        }
-                    });
-                    // If no matches found, handle as needed (e.g., show no suggestions)
-                    if (!dataList.options.length) {
-                        let option = document.createElement('option');
-                        option.value = "No suggestions found";
-                        option.disabled = true;
-                        dataList.appendChild(option);
+                    if (value.length < 1) {
+                        dataList.innerHTML = '';
+                        return;
                     }
-                })
-                .catch(error => console.error('Autocomplete error:', error));
+                    fetch(`https://speciesdb.ddns.net/autocomplete?column=${this.name}&prefix=${value}`)
+                        .then(response => response.json())
+                        .then(items => {
+                            dataList.innerHTML = '';
+                            items.forEach(item => {
+                                if (item !== null && item.toString().toLowerCase().startsWith(value.toLowerCase())) {
+                                    let option = document.createElement('option');
+                                    option.value = item;
+                                    dataList.appendChild(option);
+                                }
+                            });
+                            if (!dataList.options.length) {
+                                let option = document.createElement('option');
+                                option.value = "No suggestions found";
+                                option.disabled = true;
+                                dataList.appendChild(option);
+                            }
+                        })
+                        .catch(error => console.error('Autocomplete error:', error));
+                });
+            }
         });
-    }
-</script>
+    </script>
+</body>
+</html>
