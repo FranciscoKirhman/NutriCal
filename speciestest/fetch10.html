@@ -79,91 +79,90 @@
     <pre id="data"></pre>
 
     <script>
-        document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
-        document.getElementById('clearDataBtn').addEventListener('click', clearData);
+    document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+    document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-        function fetchData() {
-            const searchParams = new URLSearchParams();
-            document.querySelectorAll('.search-input').forEach(input => {
-                if (input.value.trim() !== '') {
-                    searchParams.append(input.name, input.value);
+    function fetchData() {
+        const searchParams = new URLSearchParams();
+        document.querySelectorAll('.search-input').forEach(input => {
+            if (input.value.trim() !== '') {
+                searchParams.append(input.name, input.value);
+            }
+        });
+
+        displayMessage("Fetch button clicked, sending request...");
+
+        fetch('https://speciesdb.ddns.net/query?' + searchParams.toString())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
                 }
+                return response.json();
+            })
+            .then(data => {
+                displayMessage("Data received successfully");
+                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                displayMessage('Fetch error: ' + error.message, true);
             });
+    }
 
-            displayMessage("Fetch button clicked, sending request...");
+    function displayMessage(message, isError = false) {
+        const messageElement = document.getElementById('messages');
+        messageElement.innerHTML = '';
+        const newMessageElement = document.createElement('div');
+        newMessageElement.textContent = message;
+        newMessageElement.style.color = isError ? 'red' : 'green';
+        messageElement.appendChild(newMessageElement);
+    }
 
-            fetch('https://speciesdb.ddns.net/query?' + searchParams.toString())
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    displayMessage("Data received successfully");
-                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    displayMessage('Fetch error: ' + error.message, true);
-                });
-        }
+    function clearData() {
+        document.getElementById('data').textContent = '';
+        document.getElementById('messages').innerHTML = '';
+        document.querySelectorAll('.search-input').forEach(input => input.value = '');
+    }
 
-        function displayMessage(message, isError = false) {
-            const messageElement = document.getElementById('messages');
-            messageElement.innerHTML = '';
-            const newMessageElement = document.createElement('div');
-            newMessageElement.textContent = message;
-            newMessageElement.style.color = isError ? 'red' : 'green';
-            messageElement.appendChild(newMessageElement);
-        }
-
-        function clearData() {
-            document.getElementById('data').textContent = '';
-            document.getElementById('messages').innerHTML = '';
-            document.querySelectorAll('.search-input').forEach(input => input.value = '');
-        }
-
-        // Autocomplete setup
-        document.querySelectorAll('.search-input').forEach(input => {
-            if (input.list instanceof HTMLDataListElement) {
-                setupAutocomplete(input, input.list.id);
-            }
-        });
-
-        // Improved Autocomplete setup
-        document.querySelectorAll('.search-input').forEach(input => {
-            if (input.getAttribute('list')) {
-                input.addEventListener('input', function() {
-                    const value = this.value;
-                    const dataListId = this.getAttribute('list');
-                    const dataList = document.getElementById(dataListId);
-                    if (value.length < 1) {
+    // Autocomplete functionality for the search inputs
+    document.querySelectorAll('.search-input').forEach(input => {
+        if (input.getAttribute('list')) {
+            input.addEventListener('input', function() {
+                const value = this.value;
+                const dataListId = this.getAttribute('list');
+                const dataList = document.getElementById(dataListId);
+                if (value.length < 1) {
+                    dataList.innerHTML = '';
+                    return;
+                }
+                fetch(`https://speciesdb.ddns.net/autocomplete?column=${this.name}&prefix=${value}`)
+                    .then(response => response.json())
+                    .then(items => {
                         dataList.innerHTML = '';
-                        return;
-                    }
-                    fetch(`https://speciesdb.ddns.net/autocomplete?column=${this.name}&prefix=${value}`)
-                        .then(response => response.json())
-                        .then(items => {
-                            dataList.innerHTML = '';
-                            items.forEach(item => {
-                                if (item !== null && item.toString().toLowerCase().startsWith(value.toLowerCase())) {
-                                    let option = document.createElement('option');
-                                    option.value = item;
-                                    dataList.appendChild(option);
-                                }
-                            });
-                            if (!dataList.options.length) {
-                                let option = document.createElement('option');
-                                option.value = "No suggestions found";
-                                option.disabled = true;
-                                dataList.appendChild(option);
-                            }
-                        })
-                        .catch(error => console.error('Autocomplete error:', error));
-                });
-            }
-        });
-    </script>
+                        items.forEach(item => {
+                            let option = document.createElement('option');
+                            option.value = item;
+                            dataList.appendChild(option);
+                        });
+                        if (!dataList.options.length) {
+                            let option = document.createElement('option');
+                            option.value = "No suggestions found";
+                            option.disabled = true;
+                            dataList.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Autocomplete error:', error);
+                        dataList.innerHTML = '';
+                        let option = document.createElement('option');
+                        option.value = "Error loading suggestions";
+                        option.disabled = true;
+                        dataList.appendChild(option);
+                    });
+            });
+        }
+    });
+</script>
+
 </body>
 </html>
