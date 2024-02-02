@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Species Database Query</title>
+    <style>
+        /* Style for slider and input fields */
+        .range-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .range-field input[type=number], .search-input {
+            margin: 0 5px;
+            width: 80px;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: calc(100% - 10px);
+            margin: 0 5px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Species Database Query</h1>
+    <div>
+        <!-- Range fields for Altitudinal -->
+        <div class="range-field">
+            <label for="altitudinal-inferior">Altitudinal Inferior:</label>
+            <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="2500">
+            <input type="range" id="altitudinal-inferior-slider" min="0" max="10000" value="2500" step="100">
+        </div>
+        <div class="range-field">
+            <label for="altitudinal-superior">Altitudinal Superior:</label>
+            <input type="number" id="altitudinal-superior" name="ALTITUDINAL_SUPERIOR" value="7500">
+            <input type="range" id="altitudinal-superior-slider" min="0" max="10000" value="7500" step="100">
+        </div>
+        <!-- Search inputs with autocomplete for various fields -->
+        <input type="text" class="search-input" name="ID" placeholder="ID" list="id-list">
+        <datalist id="id-list"></datalist>
+
+        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet" list="specific-epithet-list">
+        <datalist id="specific-epithet-list"></datalist>
+
+        <input type="text" class="search-input" name="GENUS" placeholder="Genus" list="genus-list">
+        <datalist id="genus-list"></datalist>
+
+        <input type="text" class="search-input" name="TYPE" placeholder="Type" list="type-list">
+        <datalist id="type-list"></datalist>
+
+        <input type="text" class="search-input" name="ORIGIN" placeholder="Origin" list="origin-list">
+        <datalist id="origin-list"></datalist>
+
+        <!-- Other search inputs -->
+        <input type="text" class="search-input" name="DISTRIBUTION" placeholder="Distribution">
+        <input type="text" class="search-input" name="DISTRIBUTION_NORTH" placeholder="Distribution North">
+        <input type="text" class="search-input" name="DISTRIBUTION_SOUTH" placeholder="Distribution South">
+    </div>
+    <button id="fetchDataBtn">Fetch Data</button>
+    <button id="clearDataBtn">Clear Data</button>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+
+<script>
+    // Synchronize the slider and input for Altitudinal Inferior
+    const altInferiorInput = document.getElementById('altitudinal-inferior');
+    const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+    altInferiorInput.addEventListener('input', function() {
+        altInferiorSlider.value = this.value;
+    });
+    altInferiorSlider.addEventListener('input', function() {
+        altInferiorInput.value = this.value;
+    });
+
+    // Synchronize the slider and input for Altitudinal Superior
+    const altSuperiorInput = document.getElementById('altitudinal-superior');
+    const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
+    altSuperiorInput.addEventListener('input', function() {
+        altSuperiorSlider.value = this.value;
+    });
+    altSuperiorSlider.addEventListener('input', function() {
+        altSuperiorInput.value = this.value;
+    });
+
+    document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+    document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+    function fetchData() {
+        const searchParams = new URLSearchParams();
+        document.querySelectorAll('.search-input').forEach(input => {
+            if (input.value.trim() !== '') {
+                searchParams.append(input.name, input.value);
+            }
+        });
+
+        displayMessage("Fetch button clicked, sending request...");
+
+        fetch('https://speciesdb.ddns.net/query?' + searchParams.toString())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayMessage("Data received successfully");
+                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                displayMessage('Fetch error: ' + error.message, true);
+            });
+    }
+
+    function displayMessage(message, isError = false) {
+        const messageElement = document.getElementById('messages');
+        messageElement.textContent = message;
+        messageElement.style.color = isError ? 'red' : 'green';
+    }
+
+    function clearData() {
+        document.getElementById('data').textContent = '';
+        document.getElementById('messages').textContent = '';
+        document.querySelectorAll('.search-input').forEach(input => input.value = '');
+    }
+
+    // Autocomplete functionality for the search inputs
+    document.querySelectorAll('.search-input').forEach(input => {
+        const dataListId = input.getAttribute('list');
+        if (dataListId) {
+            input.addEventListener('input', function() {
+                const value = this.value;
+                const dataList = document.getElementById(dataListId);
+                if (value.length < 1) {
+                    dataList.innerHTML = '';
+                    return;
+                }
+                fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name}&prefix=${value}`)
+                    .then(response => response.json())
+                    .then(items => {
+                        dataList.innerHTML = '';
+                        items.slice(0, 10).forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item;
+                            dataList.appendChild(option);
+                        });
+                        if (!dataList.options.length) {
+                            const option = document.createElement('option');
+                            option.value = "No suggestions found";
+                            option.disabled = true;
+                            dataList.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Autocomplete error:', error);
+                        dataList.innerHTML = '';
+                        const option = document.createElement('option');
+                        option.value = "Error loading suggestions";
+                        option.disabled = true;
+                        dataList.appendChild(option);
+                    });
+            });
+        }
+    });
+</script>
+
+
+</body>
+</html>
