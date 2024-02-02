@@ -105,26 +105,33 @@
     function fetchData() {
         const searchParams = new URLSearchParams();
         document.querySelectorAll('.search-input').forEach(input => {
-            searchParams.append(input.name, input.value);
+            if (input.value.trim() !== '') {
+                searchParams.append(input.name, input.value);
+            }
         });
 
         displayMessage("Fetch button clicked, sending request...");
 
-        fetch('https://speciesdb.ddns.net/query?' + searchParams.toString())
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                displayMessage("Data received successfully");
-                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                console.error('Fetch error:', error);
-                displayMessage('Fetch error: ' + error.message, true);
-            });
+        fetch('https://speciesdb.ddns.net/query?' + searchParams.toString(), {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayMessage("Data received successfully");
+            document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            displayMessage('Fetch error: ' + error.message, true);
+        });
     }
 
     function displayMessage(message, isError = false) {
@@ -156,30 +163,35 @@
                     dataList.innerHTML = '';
                     return;
                 }
-                fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name}&prefix=${value}`)
-                    .then(response => response.json())
-                    .then(items => {
-                        dataList.innerHTML = '';
-                        items.slice(0, 10).forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item;
-                            dataList.appendChild(option);
-                        });
-                        if (!dataList.options.length) {
-                            const option = document.createElement('option');
-                            option.value = "No suggestions found";
-                            option.disabled = true;
-                            dataList.appendChild(option);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Autocomplete error:', error);
-                        dataList.innerHTML = '';
+                fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name}&prefix=${value}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(items => {
+                    dataList.innerHTML = '';
+                    items.forEach(item => {
                         const option = document.createElement('option');
-                        option.value = "Error loading suggestions";
-                        option.disabled = true;
+                        option.value = item;
                         dataList.appendChild(option);
                     });
+                    if (!dataList.options.length) {
+                        const option = document.createElement('option');
+                        option.value = "No suggestions found";
+                        option.disabled = true;
+                        dataList.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error('Autocomplete error:', error);
+                    dataList.innerHTML = '';
+                    const option = document.createElement('option');
+                    option.value = "Error loading suggestions";
+                    option.disabled = true;
+                    dataList.appendChild(option);
+                });
             });
         }
     });
