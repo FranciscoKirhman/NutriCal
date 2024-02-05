@@ -155,24 +155,26 @@
 
 function fetchData() {
     const searchParams = new URLSearchParams();
-    // Add all input values to the search parameters only if they have been provided
+
+    // Add non-altitudinal input values to the search parameters if provided
     document.querySelectorAll('.search-input').forEach(input => {
-        if (input.value) {
+        if (input.value && input.name !== "ALTITUDINAL_INFERIOR" && input.name !== "ALTITUDINAL_SUPERIOR") {
             searchParams.append(input.name, input.value);
         }
     });
 
-    // Check if altitudinal inputs are provided, and only then append them
-    const altInferiorValue = altInferiorInput.value ? parseInt(altInferiorInput.value, 10) : null;
-    const altSuperiorValue = altSuperiorInput.value ? parseInt(altSuperiorInput.value, 10) : null;
-    if (altInferiorValue !== null) {
+    // Only add altitudinal values if they are valid numbers
+    const altInferiorValue = parseInt(altInferiorInput.value, 10);
+    const altSuperiorValue = parseInt(altSuperiorInput.value, 10);
+
+    if (!isNaN(altInferiorValue)) {
         searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
     }
-    if (altSuperiorValue !== null) {
+    if (!isNaN(altSuperiorValue)) {
         searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
     }
 
-    displayMessage("Fetch button clicked, sending request...");
+    displayMessage("Fetching data...");
 
     fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
         .then(response => {
@@ -182,17 +184,30 @@ function fetchData() {
             return response.json();
         })
         .then(data => {
-            let filteredData = data;
-
-            // Apply altitudinal filters only if the values are provided
-            if (altInferiorValue !== null || altSuperiorValue !== null) {
-                filteredData = data.filter(item => {
-                    const itemAltInferior = parseInt(item.ALTITUDINAL_INFERIOR, 10);
-                    const itemAltSuperior = parseInt(item.ALTITUDINAL_SUPERIOR, 10);
-                    return (altInferiorValue !== null ? itemAltInferior >= altInferiorValue : true) &&
-                           (altSuperiorValue !== null ? itemAltSuperior <= altSuperiorValue : true);
+            // No need to filter data here as the server is expected to handle the query parameters
+            if (data.length > 0) {
+                displayMessage("Data received successfully");
+                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                // Clear existing markers
+                markers.clearLayers();
+                // Add new markers based on the fetched data
+                data.forEach(item => {
+                    if (item.DISTRIBUTION) {
+                        addMarkers(item.DISTRIBUTION);
+                    }
                 });
+            } else {
+                displayMessage("No data found for the given criteria");
+                document.getElementById('data').textContent = '[]';
+                markers.clearLayers();
             }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            displayMessage('Fetch error: ' + error.message, true);
+        });
+}
+
 
             // Check for data after filtering
             if (filteredData.length > 0) {
