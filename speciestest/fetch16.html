@@ -85,6 +85,7 @@
     <pre id="data"></pre>
 
 <script>
+<script>
     // Synchronize the slider and input for Altitudinal Inferior
     const altInferiorInput = document.getElementById('altitudinal-inferior');
     const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
@@ -110,7 +111,6 @@
 
     function fetchData() {
         const searchParams = new URLSearchParams();
-        // Add all input values to the search parameters, except empty altitudinal values
         document.querySelectorAll('.search-input').forEach(input => {
             if (input.value) {
                 searchParams.append(input.name, input.value);
@@ -118,18 +118,13 @@
         });
 
         // Append altitudinal values only if they are not empty
-        const altInferiorValue = document.getElementById('altitudinal-inferior').value;
-        const altSuperiorValue = document.getElementById('altitudinal-superior').value;
-        if (altInferiorValue) {
-            searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
-        }
-        if (altSuperiorValue) {
-            searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
-        }
+        const altInferiorValue = altInferiorInput.value;
+        const altSuperiorValue = altSuperiorInput.value;
+        if (altInferiorValue) searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
+        if (altSuperiorValue) searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
 
         displayMessage("Fetch button clicked, sending request...");
 
-        // Fetch request with the search parameters
         fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
             .then(response => {
                 if (!response.ok) {
@@ -156,54 +151,57 @@
     function clearData() {
         document.getElementById('data').textContent = '';
         document.getElementById('messages').textContent = '';
-        // Clear all input values including altitudinal sliders and inputs
-        document.querySelectorAll('.search-input, .range-field input').forEach(input => {
-            input.value = '';
+        document.querySelectorAll('.search-input, .range-field input[type=number], .range-field input[type=range]').forEach(input => {
+            input.value = ''; // Reset the input fields to empty
         });
-        // Reset sliders to their default minimum values
-        document.getElementById('altitudinal-inferior-slider').value = document.getElementById('altitudinal-inferior-slider').min;
-        document.getElementById('altitudinal-superior-slider').value = document.getElementById('altitudinal-superior-slider').min;
     }
 
     // Autocomplete functionality for the search inputs
     document.querySelectorAll('.search-input').forEach(input => {
         const dataListId = input.getAttribute('list');
         if (dataListId) {
-            input.addEventListener('input', function() {
-                const value = this.value;
-                if (value.length < 1) {
-                    document.getElementById(dataListId).innerHTML = '';
-                    return;
-                }
-                fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name}&prefix=${value}`)
-                    .then(response => response.json())
-                    .then(items => {
-                        const dataListElement = document.getElementById(dataListId);
-                        dataListElement.innerHTML = '';
-                        items.forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item;
-                            dataListElement.appendChild(option);
-                        });
-                        if (!dataListElement.options.length) {
-                            const option = document.createElement('option');
-                            option.value = "No suggestions found";
-                            option.disabled = true;
-                            dataListElement.appendChild(option);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Autocomplete error:', error);
-                        const dataListElement = document.getElementById(dataListId);
-                        dataListElement.innerHTML = '';
-                        const option = document.createElement('option');
-                        option.value = "Error loading suggestions";
-                        option.disabled = true;
-                        dataListElement.appendChild(option);
-                    });
-            });
+            input.addEventListener('input', autocompleteHandler);
         }
     });
+
+    function autocompleteHandler(event) {
+        const input = event.target;
+        const value = input.value;
+        const dataListId = input.getAttribute('list');
+
+        if (value.length < 1) {
+            document.getElementById(dataListId).innerHTML = '';
+            return;
+        }
+
+        fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name}&prefix=${value}`)
+            .then(response => response.json())
+            .then(items => {
+                const dataListElement = document.getElementById(dataListId);
+                dataListElement.innerHTML = '';
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    dataListElement.appendChild(option);
+                });
+                if (!dataListElement.options.length) {
+                    const option = document.createElement('option');
+                    option.value = "No suggestions found";
+                    option.disabled = true;
+                    dataListElement.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('Autocomplete error:', error);
+                const dataListElement = document.getElementById(dataListId);
+                dataListElement.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = "Error loading suggestions";
+                option.disabled = true;
+                dataListElement.appendChild(option);
+            });
+    }
 </script>
+
 </body>
 </html>
