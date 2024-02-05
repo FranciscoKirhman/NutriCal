@@ -153,58 +153,58 @@
         document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
         document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-        function fetchData() {
-            const searchParams = new URLSearchParams();
-            document.querySelectorAll('.search-input').forEach(input => {
-                if (input.value) {
-                    searchParams.append(input.name, input.value);
-                }
-            });
-
-            const altInferiorValue = altInferiorInput.value || 0;
-            const altSuperiorValue = altSuperiorInput.value || 5000;
-            searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
-            searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
-
-            displayMessage("Fetch button clicked, sending request...");
-
-            fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Filter the data based on the altitudinal range
-                    const filteredData = data.filter(item => {
-                        const altInferior = parseInt(item.ALTITUDINAL_INFERIOR, 10);
-                        const altSuperior = parseInt(item.ALTITUDINAL_SUPERIOR, 10);
-                        return altInferior >= altInferiorValue && altSuperior <= altSuperiorValue;
-                    });
-
-                    if (filteredData.length > 0) {
-                        displayMessage("Data received successfully");
-                        document.getElementById('data').textContent = JSON.stringify(filteredData, null, 2);
-                        // Clear existing markers and add new ones
-                        markers.clearLayers();
-                        filteredData.forEach(item => {
-                            if (item.DISTRIBUTION) {
-                                addMarkers(item.DISTRIBUTION);
-                            }
-                        });
-                    } else {
-                        displayMessage("No data for given altitudinal range");
-                        document.getElementById('data').textContent = '';
-                        markers.clearLayers();
-                    }
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    displayMessage('Fetch error: ' + error.message, true);
-                });
+       function fetchData() {
+    const searchParams = new URLSearchParams();
+    // Add all input values to the search parameters only if they have been provided
+    document.querySelectorAll('.search-input').forEach(input => {
+        if (input.value) { // Check if the input has a value
+            searchParams.append(input.name, input.value);
         }
+    });
+    
+    // Append the altitudinal values only if they are provided
+    const altInferiorValue = parseInt(altInferiorInput.value);
+    const altSuperiorValue = parseInt(altSuperiorInput.value);
+    if (!isNaN(altInferiorValue)) { // Check if the altitudinal inferior value is provided and is a number
+        searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
+    }
+    if (!isNaN(altSuperiorValue)) { // Check if the altitudinal superior value is provided and is a number
+        searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
+    }
 
+    displayMessage("Fetch button clicked, sending request...");
+
+    fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Filter data based on the provided altitudinal range if both values are provided and valid
+            let filteredData = data;
+            if (!isNaN(altInferiorValue) && !isNaN(altSuperiorValue)) {
+                filteredData = data.filter(item => {
+                    return item.ALTITUDINAL_INFERIOR >= altInferiorValue && item.ALTITUDINAL_SUPERIOR <= altSuperiorValue;
+                });
+            }
+            
+            if (filteredData.length > 0) {
+                displayMessage("Data received successfully");
+                document.getElementById('data').textContent = JSON.stringify(filteredData, null, 2);
+            } else {
+                displayMessage("No data for given altitudinal range");
+                document.getElementById('data').textContent = '[]'; // Display an empty array
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            displayMessage('Fetch error: ' + error.message, true);
+        });
+}
+
+    
         function displayMessage(message, isError = false) {
             const messageElement = document.getElementById('messages');
             messageElement.textContent = message;
