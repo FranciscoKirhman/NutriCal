@@ -108,7 +108,7 @@
     document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
     document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-  function fetchData() {
+   function fetchData() {
     const searchParams = new URLSearchParams();
     // Add all input values to the search parameters only if they have been provided
     document.querySelectorAll('.search-input').forEach(input => {
@@ -116,19 +116,20 @@
             searchParams.append(input.name, input.value);
         }
     });
-
-    // Append the altitudinal values
-    const altInferiorValue = parseInt(altInferiorInput.value, 10);
-    const altSuperiorValue = parseInt(altSuperiorInput.value, 10);
-    if (!isNaN(altInferiorValue)) {
+    
+    // Append the altitudinal values only if they are provided
+    const altInferiorValue = altInferiorInput.value;
+    const altSuperiorValue = altSuperiorInput.value;
+    if (altInferiorValue) { // Check if the altitudinal inferior value is provided
         searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
     }
-    if (!isNaN(altSuperiorValue)) {
+    if (altSuperiorValue) { // Check if the altitudinal superior value is provided
         searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
     }
 
     displayMessage("Fetch button clicked, sending request...");
 
+    // Replace the URL with the appropriate endpoint if necessary
     fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
         .then(response => {
             if (!response.ok) {
@@ -137,40 +138,13 @@
             return response.json();
         })
         .then(data => {
-            // Filter the data based on the altitudinal range
-            const filteredData = data.filter(item => {
-                const altInferior = parseInt(item.ALTITUDINAL_INFERIOR, 10);
-                const altSuperior = parseInt(item.ALTITUDINAL_SUPERIOR, 10);
-                return (!isNaN(altInferiorValue) ? altInferior >= altInferiorValue : true) &&
-                       (!isNaN(altSuperiorValue) ? altSuperior <= altSuperiorValue : true);
-            });
-
-            if (filteredData.length > 0) {
-                displayMessage("Data received successfully");
-                document.getElementById('data').textContent = JSON.stringify(filteredData, null, 2);
-                markers.clearLayers(); // Clear existing markers
-                addMarkers(filteredData); // Add new markers based on the filtered data
-            } else {
-                displayMessage("No data for given altitudinal range");
-                document.getElementById('data').textContent = '[]'; // Display an empty array
-                markers.clearLayers(); // Clear any existing markers
-            }
+            displayMessage("Data received successfully");
+            document.getElementById('data').textContent = JSON.stringify(data, null, 2);
         })
         .catch(error => {
             console.error('Fetch error:', error);
             displayMessage('Fetch error: ' + error.message, true);
         });
-}
-function addMarkers(dataArray) {
-    dataArray.forEach(item => {
-        if (item.DISTRIBUTION) {
-            item.DISTRIBUTION.split(', ').forEach(region => {
-                if (coordinates[region]) {
-                    L.marker(coordinates[region]).addTo(markers);
-                }
-            });
-        }
-    });
 }
 
 function displayMessage(message, isError = false) {
