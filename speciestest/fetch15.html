@@ -120,7 +120,7 @@
         displayMessage("Fetch button clicked, sending request...");
 
         // Replace the URL with the appropriate endpoint if necessary
-        fetch(`http://localhost:3000/query?${searchParams.toString()}`)
+        fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.statusText);
