@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Species Database Query with Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Style for slider, input fields, and map */
+        .range-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .range-field input[type=number], .search-input {
+            margin: 0 5px;
+            width: 80px;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: calc(100% - 90px);
+            margin: 0 5px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Species Database Query</h1>
+    <div>
+        <!-- Range fields for Altitudinal -->
+        <div class="range-field">
+            <label for="altitudinal-inferior">Altitudinal Inferior:</label>
+            <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="">
+            <input type="range" id="altitudinal-inferior-slider" min="0" max="5000" value="" step="10">
+        </div>
+        <div class="range-field">
+            <label for="altitudinal-superior">Altitudinal Superior:</label>
+            <input type="number" id="altitudinal-superior" name="ALTITUDINAL_SUPERIOR" value="">
+            <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="" step="10">
+        </div>
+        <!-- Search inputs with autocomplete for various fields -->
+        <input type="text" class="search-input" name="ID" placeholder="ID" list="id-list">
+        <datalist id="id-list"></datalist>
+
+        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet" list="specific-epithet-list">
+        <datalist id="specific-epithet-list"></datalist>
+
+        <input type="text" class="search-input" name="GENUS" placeholder="Genus" list="genus-list">
+        <datalist id="genus-list"></datalist>
+
+        <input type="text" class="search-input" name="TYPE" placeholder="Type" list="type-list">
+        <datalist id="type-list"></datalist>
+
+        <input type="text" class="search-input" name="ORIGIN" placeholder="Origin" list="origin-list">
+        <datalist id="origin-list"></datalist>
+
+        <input type="text" class="search-input" name="DISTRIBUTION" placeholder="Distribution">
+        
+        <input type="text" class="search-input" name="DISTRIBUTION_NORTH" placeholder="Distribution North">
+        
+        <input type="text" class="search-input" name="DISTRIBUTION_SOUTH" placeholder="Distribution South">
+    </div>
+    <button id="fetchDataBtn">Fetch Data</button>
+    <button id="clearDataBtn">Clear Data</button>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([0, 0], 2); // Centers the map globally
+        var markers = L.layerGroup().addTo(map); // Create a layer group for markers
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Synchronize the slider and input for Altitudinal Inferior and Superior
+        const altInferiorInput = document.getElementById('altitudinal-inferior');
+        const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+        const altSuperiorInput = document.getElementById('altitudinal-superior');
+        const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
+
+        function syncSliderInput(slider, input) {
+            input.addEventListener('input', function() {
+                slider.value = this.value;
+            });
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+            });
+        }
+
+        syncSliderInput(altInferiorSlider, altInferiorInput);
+        syncSliderInput(altSuperiorSlider, altSuperiorInput);
+
+        document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+        document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+        // Fetch data function using the provided logic
+        function fetchData() {
+            const searchParams = new URLSearchParams();
+            document.querySelectorAll('.search-input').forEach(input => {
+                if (input.value) {
+                    searchParams.append(input.name, input.value);
+                }
+            });
+
+            displayMessage("Fetching data...", false);
+
+            fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayMessage("Data received successfully", false);
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                    markers.clearLayers(); // Clear existing markers before adding new ones
+                    // Assuming data has a DISTRIBUTION or similar property to use for mapping
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            if (item.DISTRIBUTION) {
+                                // Place markers based on DISTRIBUTION; adjust logic as necessary
+                                const coords = item.DISTRIBUTION.split(', '); // Example split, adjust as necessary
+                                coords.forEach(coord => {
+                                    if (coord) { // Check for valid coordinates, adjust logic as necessary
+                                        L.marker([parseFloat(coord.split(';')[0]), parseFloat(coord.split(';')[1])]).addTo(markers);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    displayMessage(`Fetch error: ${error.message}`, true);
+                });
+        }
+
+        function displayMessage(message, isError = false) {
+            const messageElement = document.getElementById('messages');
+            messageElement.textContent = message;
+            messageElement.style.color = isError ? 'red' : 'green';
+        }
+
+        function clearData() {
+            document.getElementById('data').textContent = '';
+            document.getElementById('messages').textContent = '';
+            document.querySelectorAll('.search-input').forEach(input => input.value = '');
+            altInferiorInput.value = '';
+            altSuperiorInput.value = '';
+            altInferiorSlider.value = 0;
+            altSuperiorSlider.value = 5000;
+            markers.clearLayers(); // Clear markers from the map
+        }
+    </script>
+</body>
+</html>
