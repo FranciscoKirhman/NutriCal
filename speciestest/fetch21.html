@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Species Database Query with Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Style for slider, input fields, and map */
+        .range-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .range-field input[type=number], .search-input {
+            margin: 0 5px;
+            width: 80px;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: calc(100% - 90px);
+            margin: 0 5px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Species Database Query with Map</h1>
+    <div>
+        <!-- Range fields for Altitudinal -->
+        <div class="range-field">
+            <label for="altitudinal-inferior">Altitudinal Inferior:</label>
+            <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="0">
+            <input type="range" id="altitudinal-inferior-slider" min="0" max="5000" value="0" step="10">
+        </div>
+        <div class="range-field">
+            <label for="altitudinal-superior">Altitudinal Superior:</label>
+            <input type="number" id="altitudinal-superior" name="ALTITUDINAL_SUPERIOR" value="5000">
+            <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
+        </div>
+        <!-- Search inputs with autocomplete for various fields -->
+        <input type="text" class="search-input" name="ID" placeholder="ID" list="id-list">
+        <datalist id="id-list"></datalist>
+
+        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet" list="specific-epithet-list">
+        <datalist id="specific-epithet-list"></datalist>
+
+        <input type="text" class="search-input" name="GENUS" placeholder="Genus" list="genus-list">
+        <datalist id="genus-list"></datalist>
+
+        <input type="text" class="search-input" name="TYPE" placeholder="Type" list="type-list">
+        <datalist id="type-list"></datalist>
+
+        <input type="text" class="search-input" name="ORIGIN" placeholder="Origin" list="origin-list">
+        <datalist id="origin-list"></datalist>
+
+        <input type="text" class="search-input" name="DISTRIBUTION" placeholder="Distribution" list="distribution-list">
+        <datalist id="distribution-list"></datalist>
+        
+        <input type="text" class="search-input" name="DISTRIBUTION_NORTH" placeholder="Distribution North" list="distribution_north-list">
+        <datalist id="distribution_north-list"></datalist>
+        
+        <input type="text" class="search-input" name="DISTRIBUTION_SOUTH" placeholder="Distribution South" list="distribution_south-list">
+        <datalist id="distribution_south-list"></datalist>
+
+        <button id="fetchDataBtn">Fetch Data</button>
+        <button id="clearDataBtn">Clear Data</button>
+    </div>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([0, 0], 2); // Centers the map globally
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Coordinates for each region
+        const coordinates = {
+            "AYP": [-18.4783, -70.3126], // Arica y Parinacota
+            "TAR": [-20.2140, -70.1522], // Tarapacá
+            "ANT": [-23.6524, -70.3954], // Antofagasta
+            "ATA": [-27.3668, -70.3323], // Atacama
+            "COQ": [-29.9533, -71.3395], // Coquimbo
+            "VAL": [-33.0472, -71.6127], // Valparaíso
+            "RME": [-33.4378, -70.6504], // Metropolitana de Santiago
+            "LBO": [-34.5755, -71.0022], // Libertador General Bernardo O'Higgins
+            "MAU": [-35.4264, -71.6554], // Maule
+            "NUB": [-36.7226, -72.1114], // Ñuble
+            "BIO": [-37.4689, -72.3527], // Biobío
+            "ARA": [-38.9489, -72.3311], // Araucanía
+            "LRI": [-40.2310, -72.3311], // Los Ríos
+            "LLA": [-41.4717, -72.9369], // Los Lagos
+            "AIS": [-45.5752, -72.0662], // Aisén
+            "MAG": [-53.1638, -70.9171], // Magallanes
+            "JFE": [-33.6148, -78.8311], // Juan Fernández
+            "IPA": [-27.1127, -109.3497], // Isla de Pascua
+            "IDE": [-26.0000, -80.5333]  // Islas Desventuradas
+        };
+
+        // Function to add markers based on DISTRIBUTION values
+        function addMarkers(distribution) {
+            const regions = distribution.split(", ");
+            regions.forEach(region => {
+                if (coordinates[region]) {
+                    L.marker(coordinates[region]).addTo(map)
+                        .bindPopup(region)
+                        .openPopup();
+                }
+            });
+        }
+
+        // Synchronize the slider and input
+        function syncSliderInput(slider, input) {
+            input.addEventListener('input', function() {
+                slider.value = this.value;
+            });
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+            });
+        }
+
+        // Synchronize the slider and input for Altitudinal Inferior and Superior
+        syncSliderInput(document.getElementById('altitudinal-inferior-slider'), document.getElementById('altitudinal-inferior'));
+        syncSliderInput(document.getElementById('altitudinal-superior-slider'), document.getElementById('altitudinal-superior'));
+
+        document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+        document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+        // Autocomplete functionality for the search inputs
+        document.querySelectorAll('.search-input').forEach(input => {
+            const dataListId = input.getAttribute('list');
+            const dataList = document.getElementById(dataListId);
+
+            input.addEventListener('input', function() {
+                const value = this.value.trim();
+                if (value.length < 1) {
+                    dataList.innerHTML = '';
+                    return;
+                }
+                fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name.toLowerCase()}&prefix=${encodeURIComponent(value)}`)
+                    .then(response => response.json())
+                    .then(items => {
+                        dataList.innerHTML = '';
+                        items.slice(0, 10).forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item;
+                            dataList.appendChild(option);
+                        });
+                        if (!dataList.options.length) {
+                            const option = document.createElement('option');
+                            option.value = "No suggestions found";
+                            option.disabled = true;
+                            dataList.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Autocomplete error:', error);
+                        dataList.innerHTML = '';
+                        const option = document.createElement('option');
+                        option.value = "Error loading suggestions";
+                        option.disabled = true;
+                        dataList.appendChild(option);
+                    });
+            });
+        });
+
+        function fetchData() {
+            const searchParams = new URLSearchParams();
+            document.querySelectorAll('.search-input').forEach(input => {
+                if (input.value) {
+                    searchParams.append(input.name, input.value);
+                }
+            });
+
+            displayMessage("Fetching data...", false);
+
+            fetch(`https://speciesdb.ddns.net/query?${searchParams}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayMessage("Data received successfully", false);
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                    // Clear existing markers
+                    map.eachLayer(function(layer) {
+                        if (!!layer.toGeoJSON) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                    // Re-add the tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+                    // Assuming data has a DISTRIBUTION or similar property to use for mapping
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            if (item.DISTRIBUTION) {
+                                // Function call to place markers based on DISTRIBUTION
+                                addMarkers(item.DISTRIBUTION);
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    displayMessage(`Fetch error: ${error.message}`, true);
+                });
+        }
+
+        function displayMessage(message, isError) {
+            const messageElement = document.getElementById('messages');
+            messageElement.textContent = message;
+            messageElement.style.color = isError ? 'red' : 'green';
+        }
+
+        function clearData() {
+            document.querySelectorAll('.search-input').forEach(input => input.value = '');
+            document.querySelectorAll('datalist').forEach(datalist => datalist.innerHTML = '');
+            document.getElementById('data').textContent = '';
+            document.getElementById('messages').textContent = '';
+            // Reset sliders to their default values
+            document.getElementById('altitudinal-inferior').value = '0';
+            document.getElementById('altitudinal-superior').value = '5000';
+            document.getElementById('altitudinal-inferior-slider').value = 0;
+            document.getElementById('altitudinal-superior-slider').value = 5000;
+        }
+    </script>
+</body>
+</html>
