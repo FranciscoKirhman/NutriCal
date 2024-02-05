@@ -158,46 +158,44 @@ function fetchData() {
 
     // Add non-altitudinal input values to the search parameters if provided
     document.querySelectorAll('.search-input').forEach(input => {
-        if (input.value && input.name !== "ALTITUDINAL_INFERIOR" && input.name !== "ALTITUDINAL_SUPERIOR") {
-            searchParams.append(input.name, input.value);
+        const value = input.value.trim();
+        if (value) {
+            searchParams.append(input.name, value);
         }
     });
 
-    // Only add altitudinal values if they are valid numbers
-    const altInferiorValue = parseInt(altInferiorInput.value, 10);
-    const altSuperiorValue = parseInt(altSuperiorInput.value, 10);
+    // Only add altitudinal values if they are provided and valid
+    const altInferiorValue = altInferiorInput.value.trim();
+    const altSuperiorValue = altSuperiorInput.value.trim();
 
-    if (!isNaN(altInferiorValue)) {
+    if (altInferiorValue) {
         searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
     }
-    if (!isNaN(altSuperiorValue)) {
+    if (altSuperiorValue) {
         searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
     }
 
-    displayMessage("Fetching data...");
+    displayMessage("Fetching data...", false);
 
     fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
+                throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
-            // No need to filter data here as the server is expected to handle the query parameters
             if (data.length > 0) {
-                displayMessage("Data received successfully");
+                displayMessage("Data received successfully", false);
                 document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-                // Clear existing markers
                 markers.clearLayers();
-                // Add new markers based on the fetched data
                 data.forEach(item => {
                     if (item.DISTRIBUTION) {
                         addMarkers(item.DISTRIBUTION);
                     }
                 });
             } else {
-                displayMessage("No data found for the given criteria");
+                displayMessage("No data found for the given criteria", false);
                 document.getElementById('data').textContent = '[]';
                 markers.clearLayers();
             }
@@ -208,103 +206,34 @@ function fetchData() {
         });
 }
 
-
-            // Check for data after filtering
-            if (filteredData.length > 0) {
-                displayMessage("Data received successfully");
-                document.getElementById('data').textContent = JSON.stringify(filteredData, null, 2);
-            } else {
-                displayMessage("No data found for the given criteria");
-                document.getElementById('data').textContent = '[]'; // Display an empty array
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            displayMessage('Fetch error: ' + error.message, true);
-        });
+function displayMessage(message, isError) {
+    const messageElement = document.getElementById('messages');
+    messageElement.textContent = message;
+    messageElement.style.color = isError ? 'red' : 'green';
 }
 
-
-function addMarkers(dataArray) {
-    dataArray.forEach(item => {
-        if (item.DISTRIBUTION) {
-            item.DISTRIBUTION.split(', ').forEach(region => {
-                if (coordinates[region]) {
-                    L.marker(coordinates[region]).addTo(markers);
-                }
-            });
+function clearData() {
+    document.getElementById('data').textContent = '';
+    displayMessage("", false);
+    document.querySelectorAll('.search-input').forEach(input => {
+        input.value = '';
+        if (input.getAttribute('type') === 'range') {
+            input.value = input.getAttribute('min');
         }
     });
+    altInferiorSlider.value = altInferiorSlider.min;
+    altSuperiorSlider.value = altSuperiorSlider.max;
+    markers.clearLayers();
 }
 
-    
-    // Append the altitudinal values only if they are provided
-    const altInferiorValue = parseInt(altInferiorInput.value);
-    const altSuperiorValue = parseInt(altSuperiorInput.value);
-    if (!isNaN(altInferiorValue)) { // Check if the altitudinal inferior value is provided and is a number
-        searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
-    }
-    if (!isNaN(altSuperiorValue)) { // Check if the altitudinal superior value is provided and is a number
-        searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
-    }
+// Ensure that the sliders are linked to the text inputs
+syncSliderInput(altInferiorSlider, altInferiorInput);
+syncSliderInput(altSuperiorSlider, altSuperiorInput);
 
-    displayMessage("Fetch button clicked, sending request...");
+// Add event listeners to buttons
+document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-    fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Filter data based on the provided altitudinal range if both values are provided and valid
-            let filteredData = data;
-            if (!isNaN(altInferiorValue) && !isNaN(altSuperiorValue)) {
-                filteredData = data.filter(item => {
-                    return item.ALTITUDINAL_INFERIOR >= altInferiorValue && item.ALTITUDINAL_SUPERIOR <= altSuperiorValue;
-                });
-            }
-            
-            if (filteredData.length > 0) {
-                displayMessage("Data received successfully");
-                document.getElementById('data').textContent = JSON.stringify(filteredData, null, 2);
-            } else {
-                displayMessage("No data for given altitudinal range");
-                document.getElementById('data').textContent = '[]'; // Display an empty array
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            displayMessage('Fetch error: ' + error.message, true);
-        });
-}
-
-    
-        function displayMessage(message, isError = false) {
-            const messageElement = document.getElementById('messages');
-            messageElement.textContent = message;
-            messageElement.style.color = isError ? 'red' : 'green';
-        }
-
-        function clearData() {
-            document.getElementById('data').textContent = '';
-            document.getElementById('messages').textContent = '';
-            document.querySelectorAll('.search-input').forEach(input => {
-                input.value = '';
-                if (input.type === 'range') {
-                    input.value = input.min;
-                }
-            });
-            // Reset the altitudinal inputs
-            altInferiorInput.value = '';
-            altSuperiorInput.value = '';
-            altInferiorSlider.value = 0;
-            altSuperiorSlider.value = 5000;
-
-            // Clear markers from the map
-            markers.clearLayers();
-        }
 
         // Autocomplete functionality for specific search inputs
         document.querySelectorAll('.search-input').forEach(input => {
