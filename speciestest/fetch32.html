@@ -283,9 +283,11 @@ function populateDropdown(selectElementId, options) {
         });
 
       
-        populateDropdown('distribution-north', regionNames.map(region => region.name));
-        populateDropdown('distribution-south', regionNames.map(region => region.name));
-
+        // Corrected way to populate Distribution dropdowns using the names from regionNames object
+        Object.values(regionNames).forEach(regionName => {
+            populateDropdown('distribution-north', [regionName]);
+            populateDropdown('distribution-south', [regionName]);
+        });
 
     // Autocomplete functionality for specific search inputs
 document.querySelectorAll('.search-input').forEach(input => {
