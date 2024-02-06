@@ -11,13 +11,13 @@
             align-items: center;
             margin-bottom: 10px;
         }
-        .range-field input[type=number], .search-input {
+        .range-field input[type=number], .search-input, select {
             margin: 0 5px;
             width: auto; /* Adjusted for select and input alignment */
         }
-        input[type=range], select {
+        input[type=range] {
             -webkit-appearance: none;
-            width: 100%;
+            width: calc(100% - 180px);
             margin: 0 5px;
         }
         input[type=range]:focus {
@@ -50,39 +50,57 @@
         <!-- Range fields for Altitudinal -->
         <div class="range-field">
             <label for="altitudinal-inferior">Altitudinal Inferior:</label>
-            <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="0">
+            <input type="number" id="altitudinal-inferior" name="altitudinal_inferior" value="0">
             <input type="range" id="altitudinal-inferior-slider" min="0" max="5000" value="0" step="10">
         </div>
         <div class="range-field">
             <label for="altitudinal-superior">Altitudinal Superior:</label>
-            <input type="number" id="altitudinal-superior" name="ALTITUDINAL_SUPERIOR" value="5000">
+            <input type="number" id="altitudinal-superior" name="altitudinal_superior" value="5000">
             <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
         </div>
 
         <!-- Autocomplete fields -->
-        <input type="text" class="search-input" name="ID" placeholder="ID" list="id-list">
+        <label for="id-input">ID:</label>
+        <input type="text" id="id-input" name="id" placeholder="ID" list="id-list">
         <datalist id="id-list"></datalist>
-        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet" list="specific-epithet-list">
+
+        <label for="specific-epithet-input">Specific Epithet:</label>
+        <input type="text" id="specific-epithet-input" name="specific_epithet" placeholder="Specific Epithet" list="specific-epithet-list">
         <datalist id="specific-epithet-list"></datalist>
-        <input type="text" class="search-input" name="GENUS" placeholder="Genus" list="genus-list">
+
+        <label for="genus-input">Genus:</label>
+        <input type="text" id="genus-input" name="genus" placeholder="Genus" list="genus-list">
         <datalist id="genus-list"></datalist>
 
-        <!-- Other search inputs and dropdowns -->
-        <select id="type" name="TYPE" class="search-input">
+        <!-- Distribution with Autocomplete -->
+        <input type="text" class="search-input" name="DISTRIBUTION" placeholder="Distribution" list="distribution-list">
+        <datalist id="distribution-list"></datalist>
+
+        <!-- Dropdowns -->
+        <label for="type-select">Type:</label>
+        <select id="type-select" name="type" class="search-input">
             <option value="" selected>Select Type</option>
-            <!-- Type options populated here -->
+            <!-- Type options populated dynamically -->
         </select>
-        <select id="origin" name="ORIGIN" class="search-input">
+
+        <label for="origin-select">Origin:</label>
+        <select id="origin-select" name="origin" class="search-input">
             <option value="" selected>Select Origin</option>
-            <!-- Origin options populated here -->
+            <option value="Endemica">Endémica</option>
+            <option value="Introducida">Introducida</option>
+            <option value="Nativa">Nativa</option>
         </select>
-        <select id="distribution-north" name="DISTRIBUTION_NORTH" class="search-input">
+
+        <label for="distribution-north-select">Distribution North:</label>
+        <select id="distribution-north-select" name="distribution_north" class="search-input">
             <option value="" selected>Select Distribution North</option>
-            <!-- Distribution North options populated here -->
+            <!-- Distribution North options populated dynamically -->
         </select>
-        <select id="distribution-south" name="DISTRIBUTION_SOUTH" class="search-input">
+
+        <label for="distribution-south-select">Distribution South:</label>
+        <select id="distribution-south-select" name="distribution_south" class="search-input">
             <option value="" selected>Select Distribution South</option>
-            <!-- Distribution South options populated here -->
+            <!-- Distribution South options populated dynamically -->
         </select>
 
         <button id="fetchDataBtn">Fetch Data</button>
@@ -94,11 +112,11 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
+        // Map initialization
         var map = L.map('map').setView([-33.4378, -70.6504], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
         const regionNames = {
             "AYP": "Arica y Parinacota",
             "TAR": "Tarapacá",
@@ -120,31 +138,24 @@
             "IPA": "Isla de Pascua",
             "IDE": "Islas Desventuradas"
         };
+        const northSelect = document.getElementById('distribution-north-select');
+        const southSelect = document.getElementById('distribution-south-select');
+
+        Object.entries(regionNames).forEach(([code, name]) => {
+            const northOption = document.createElement('option');
+            northOption.value = code;
+            northOption.textContent = name;
+            northSelect.appendChild(northOption);
+
+            const southOption = document.createElement('option');
+            southOption.value = code;
+            southOption.textContent = name;
+            southSelect.appendChild(southOption);
+    });
+};
 
 
-        // Region names mapping
-        const regionNames = {
-            "AYP": "Arica y Parinacota",
-            "TAR": "Tarapacá",
-            "ANT": "Antofagasta",
-            "ATA": "Atacama",
-            "COQ": "Coquimbo",
-            "VAL": "Valparaíso",
-            "RME": "Metropolitana de Santiago",
-            "LBO": "Libertador General Bernardo O'Higgins",
-            "MAU": "Maule",
-            "NUB": "Ñuble",
-            "BIO": "Biobío",
-            "ARA": "Araucanía",
-            "LRI": "Los Ríos",
-            "LLA": "Los Lagos",
-            "AIS": "Aisén",
-            "MAG": "Magallanes",
-            "JFE": "Juan Fernández",
-            "IPA": "Isla de Pascua",
-            "IDE": "Islas Desventuradas"
-        };
-
+      
         // Function to populate dropdowns with region names
         function populateRegionDropdowns(ids) {
             ids.forEach(id => {
@@ -165,7 +176,11 @@
         }
 
         // Populate dropdowns on page load
-        populateRegionDropdowns(['distribution-north', 'distribution-south']);
+        populateRegionDropdowns(['distribution-north', 'distribution-south']);  
+        
+        // Assuming you have an endpoint for distribution autocomplete
+        const distributionInput = document.getElementById('distribution-input'); // Adjust ID if needed
+        distributionInput.addEventListener('input', () => autocompleteHandler(distributionInput, 'DISTRIBUTION'));
 
         // Function to populate Type dropdown with nested options
         const typeOptions = {
@@ -314,15 +329,72 @@
                 input.value = this.value;
             });
         }
+         // Synchronize sliders with number inputs
+        const syncSlidersWithInputs = () => {
+            const altInferiorInput = document.getElementById('altitudinal-inferior');
+            const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+            const altSuperiorInput = document.getElementById('altitudinal-superior');
+            const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
 
+            altInferiorInput.addEventListener('input', () => {
+                altInferiorSlider.value = altInferiorInput.value;
+            });
+            altInferiorSlider.addEventListener('input', () => {
+                altInferiorInput.value = altInferiorSlider.value;
+            });
+
+            altSuperiorInput.addEventListener('input', () => {
+                altSuperiorSlider.value = altSuperiorInput.value;
+            });
+            altSuperiorSlider.addEventListener('input', () => {
+                altSuperiorInput.value = altSuperiorSlider.value;
+            });
+        };
+
+        // Populate datalists for autocomplete fields
+        const populateAutocompleteFields = () => {
+            // Autocomplete for ID
+            const idInput = document.getElementById('id-input');
+            idInput.addEventListener('input', () => autocompleteHandler(idInput, 'ID'));
+
+            // Autocomplete for Specific Epithet
+            const specificEpithetInput = document.getElementById('specific-epithet-input');
+            specificEpithetInput.addEventListener('input', () => autocompleteHandler(specificEpithetInput, 'SPECIFIC_EPITHET'));
+
+            // Autocomplete for Genus
+            const genusInput = document.getElementById('genus-input');
+            genusInput.addEventListener('input', () => autocompleteHandler(genusInput, 'GENUS'));
+        };
+
+        // Autocomplete handler function
+        const autocompleteHandler = (inputElement, fieldName) => {
+            const value = inputElement.value.trim();
+            const dataListId = inputElement.getAttribute('list');
+            const dataList = document.getElementById(dataListId);
+
+            if (value) {
+                fetch(`https://speciesdb.ddns.net/autocomplete?field=${fieldName}&query=${encodeURIComponent(value)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        dataList.innerHTML = '';
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item;
+                            dataList.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Autocomplete error:', error));
+            } else {
+                dataList.inne
         // Initialize synchronization of sliders and inputs
         syncSliderInput(altInferiorSlider, altInferiorInput);
         syncSliderInput(altSuperiorSlider, altSuperiorInput);
 
-        // Add event listeners to buttons
-        document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
-        document.getElementById('clearDataBtn').addEventListener('click', clearData);
-
+        // Event listeners for Fetch and Clear buttons
+        const setupEventListeners = () => {
+            document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+            document.getElementById('clearDataBtn').addEventListener('click', clearData);
+        };
         // Initialize dropdowns
         populateTypeDropdown('type', typeOptions);
         populateRegionDropdowns(['distribution-north', 'distribution-south']);
