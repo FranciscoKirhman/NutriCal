@@ -154,15 +154,18 @@ function fetchData() {
             map.eachLayer(layer => {
                 if (!!layer.toGeoJSON) map.removeLayer(layer); // Check if layer is a marker and remove
             });
-            // Assuming 'data' contains an array of distribution codes for pins
-             if (data.DISTRIBUTION) {
-                data.DISTRIBUTION.forEach(distCode => {
-                    if (coordinates[distCode]) {
-                        L.marker(coordinates[distCode]).addTo(map)
-                            .bindPopup(distCode); // Or any additional information
-                    }
-                });
-            }
+            // Handle DISTRIBUTION_NORTH field
+                if (item.DISTRIBUTION_NORTH && coordinates[item.DISTRIBUTION_NORTH]) {
+                    L.marker(coordinates[item.DISTRIBUTION_NORTH]).addTo(map)
+                        .bindPopup(`ID: ${item.ID}, North Distribution: ${item.DISTRIBUTION_NORTH}`);
+                }
+
+                // Handle DISTRIBUTION_SOUTH field
+                if (item.DISTRIBUTION_SOUTH && coordinates[item.DISTRIBUTION_SOUTH]) {
+                    L.marker(coordinates[item.DISTRIBUTION_SOUTH]).addTo(map)
+                        .bindPopup(`ID: ${item.ID}, South Distribution: ${item.DISTRIBUTION_SOUTH}`);
+                }
+            });
         })
         .catch(error => {
             console.error('Fetch error:', error);
