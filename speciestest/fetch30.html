@@ -44,92 +44,83 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var map = L.map('map').setView([-33.4378, -70.6504], 4);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+    // Synchronize the slider and input for Altitudinal Inferior
+    const altInferiorInput = document.getElementById('altitudinal-inferior');
+    const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+    altInferiorInput.addEventListener('input', () => {
+        altInferiorSlider.value = altInferiorInput.value;
+    });
+    altInferiorSlider.addEventListener('input', () => {
+        altInferiorInput.value = altInferiorSlider.value;
+    });
 
-            function syncSliderWithInput(sliderId, inputId) {
-                var slider = document.getElementById(sliderId);
-                var input = document.getElementById(inputId);
-                slider.oninput = function() {
-                    input.value = this.value;
-                };
-                input.oninput = function() {
-                    slider.value = this.value;
-                };
+    // Synchronize the slider and input for Altitudinal Superior
+    const altSuperiorInput = document.getElementById('altitudinal-superior');
+    const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
+    altSuperiorInput.addEventListener('input', () => {
+        altSuperiorSlider.value = altSuperiorInput.value;
+    });
+    altSuperiorSlider.addEventListener('input', () => {
+        altSuperiorInput.value = altSuperiorSlider.value;
+    });
+
+    document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+    document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+    function fetchData() {
+        const searchParams = new URLSearchParams();
+        document.querySelectorAll('input[type=text], input[type=number]').forEach(input => {
+            if (input.value && input.name) {
+                searchParams.append(input.name, input.value);
             }
-
-            syncSliderWithInput('altitudinal-inferior-slider', 'altitudinal-inferior');
-            syncSliderWithInput('altitudinal-superior-slider', 'altitudinal-superior');
-
-            function populateTypeDropdown(selectId, typeOptions) {
-                const select = document.getElementById(selectId);
-                for (const [category, values] of Object.entries(typeOptions)) {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = category;
-                    values.forEach(value => {
-                        const option = document.createElement('option');
-                        option.value = value;
-                        option.textContent = value;
-                        optgroup.appendChild(option);
-                    });
-                    select.appendChild(optgroup);
-                }
-            }
-
-            const typeOptions = {
-                "Arbustivas": ["Arbustivas", "Arbusto o árbol pequeño", "Arbusto perenne", "Arbusto o subarbusto", "Arbusto parásito", "Arbusto suculento", "Arbusto trepador", "Arbusto"],
-                "Hierba": ["Hierba", "Hierba anual", "Hierba bienal", "Hierba anual o bienal", "Hierba anual, bienal o perenne", "Hierba bienal o perenne", "Hierba anual o perenne", "Hierba acuática perenne", "Hierba acuática anual", "Hierba acuática anual o bienal", "Hierba epífita o saxícola perenne", "Hierba epífita o terrestre perenne", "Hierba epífita perenne", "Hierba anual o subarbusto", "Hierba anual, hierba perenne o subarbusto", "Hierba bienal o subarbusto", "Hierba perenne o subarbusto", "Hierba parásita anual", "Hierba parásita perenne", "Hierba saxícola perenne", "Hierba suculenta anual", "Hierba suculenta perenne", "Hierba terrestre o saxícola perenne", "Hierba trepadora anual", "Hierba trepadora anual o bienal", "Hierba trepadora perenne"],
-                "Subarbusto": ["Subarbusto", "Subarbusto perenne", "Subarbustiva", "Subarbusto epífito o terrestre", "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador"],
-                "Árbol": ["Árbol", "Árbol suculento"]
-            };
-
-            populateTypeDropdown('type-select', typeOptions);
-            document.getElementById('fetchDataBtn').addEventListener('click', function() {
-                // Construct the query URL based on form inputs
-                const baseUrl = 'https://speciesdb.ddns.net/query'; // Example API endpoint
-                const searchParams = new URLSearchParams();
-            
-                // Assuming your form inputs have IDs or names that correspond to query parameters
-                const altInferior = document.getElementById('altitudinal-inferior').value;
-                const altSuperior = document.getElementById('altitudinal-superior').value;
-                const type = document.getElementById('type-select').value;
-                
-                // Add parameters only if they have a value
-                if (altInferior) searchParams.append('altitudinal_inferior', altInferior);
-                if (altSuperior) searchParams.append('altitudinal_superior', altSuperior);
-                if (type) searchParams.append('type', type);
-                
-                // Additional parameters can be added here based on other form inputs
-            
-                // Fetch data from the constructed URL
-                fetch(`${baseUrl}?${searchParams.toString()}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Process and display the fetched data
-                        // For simplicity, we're just displaying the JSON in a <pre> element
-                        document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-                    })
-                    .catch(error => {
-                        console.error('There has been a problem with your fetch operation:', error);
-                        document.getElementById('messages').textContent = 'Error fetching data: ' + error.message;
-                    });
-            });
-
-            document.getElementById('clearDataBtn').addEventListener('click', function() {
-                document.getElementById('data').textContent = '';
-                document.getElementById('messages').textContent = '';
-                // Reset inputs and selects to their default values
-                document.querySelectorAll('input[type="number"], select').forEach(input => input.value = input.defaultValue);
-            });
         });
-    </script>
+
+        displayMessage("Fetching data...");
+
+        fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayMessage("Data fetched successfully.");
+                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                displayMessage(`Fetch error: ${error.message}`, true);
+            });
+    }
+
+    function displayMessage(message, isError = false) {
+        const messageElement = document.getElementById('messages');
+        messageElement.textContent = message;
+        messageElement.style.color = isError ? 'red' : 'green';
+    }
+
+    function clearData() {
+        document.getElementById('data').textContent = '';
+        document.getElementById('messages').textContent = '';
+        document.querySelectorAll('input[type=text], input[type=number], input[type=range]').forEach(input => {
+            // Reset text and number inputs to empty
+            input.value = '';
+    
+            // For range inputs, set them to an empty string instead of their min values
+            if (input.type === 'range') {
+                input.value = ''; // Set slider inputs to empty values
+            }
+        });
+    
+        // Also reset altitudinal inputs to empty values for consistency
+        altInferiorInput.value = '';
+        altSuperiorSlider.value = '';
+        altSuperiorInput.value = '';
+        altInferiorSlider.value = '';
+    }
+
+</script>
+
 </body>
 </html>
