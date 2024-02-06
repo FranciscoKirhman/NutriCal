@@ -151,8 +151,9 @@
         };
         populateTypeDropdown('type', types);
         populateRegionDropdowns(['distribution-north', 'distribution-south'], coordinates);
-
-function populateDropdown(selectId, options, defaultText) {
+ 
+        // Dropdown population function
+        function populateDropdown(selectId, options, defaultText) {
             const select = document.getElementById(selectId);
             const defaultOption = document.createElement('option');
             defaultOption.value = "";
@@ -160,10 +161,10 @@ function populateDropdown(selectId, options, defaultText) {
             defaultOption.selected = true;
             select.appendChild(defaultOption);
 
-            options.forEach(option => {
+            options.forEach(name => {
                 const optionElement = document.createElement('option');
-                optionElement.value = option.code;
-                optionElement.textContent = option.name;
+                optionElement.value = name;
+                optionElement.textContent = name;
                 select.appendChild(optionElement);
             });
         }
@@ -315,12 +316,25 @@ function clearData() {
     altSuperiorSlider.value = altSuperiorSlider.max;
     markers.clearLayers();
 }
-
+// Utility function to find key by value
+        function getKeyByValue(object, value) {
+            return Object.keys(object).find(key => object[key] === value);
+        }
 // Ensure that the sliders are linked to the text inputs
 syncSliderInput(altInferiorSlider, altInferiorInput);
 syncSliderInput(altSuperiorSlider, altSuperiorInput);
 
 // Add event listeners to buttons
+// Fetch Data Function
+document.getElementById('fetchDataBtn').addEventListener('click', function() {
+    const searchParams = new URLSearchParams();
+
+    // Convert full region names to codes
+    const northRegion = document.getElementById('distribution-north').value;
+    const southRegion = document.getElementById('distribution-south').value;
+    if (northRegion) searchParams.append('DISTRIBUTION_NORTH', getKeyByValue(regionNames, northRegion));
+    if (southRegion) searchParams.append('DISTRIBUTION_SOUTH', getKeyByValue(regionNames, southRegion));
+
 document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
 document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
