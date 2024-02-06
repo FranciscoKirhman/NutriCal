@@ -46,6 +46,7 @@
 <body>
     <h1>Species Database Query with Map</h1>
     <div>
+        <!-- Range fields for Altitudinal -->
         <div class="range-field">
             <label for="altitudinal-inferior">Altitudinal Inferior:</label>
             <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="0">
@@ -57,11 +58,12 @@
             <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
         </div>
 
+        <!-- Dropdowns for Type, Origin, and Distribution -->
         <select id="type" name="TYPE" class="search-input">
-            <!-- Nested options will be populated using JavaScript -->
+            <option value="" selected>Select Type</option>
+            <!-- Options populated using JavaScript -->
         </select>
 
-        <!-- Updated Origin Dropdown to Include Empty Default Option -->
         <select id="origin" name="ORIGIN" class="search-input">
             <option value="" selected>Select Origin</option>
             <option value="Endemica">Endémica</option>
@@ -70,11 +72,13 @@
         </select>
 
         <select id="distribution-north" name="DISTRIBUTION_NORTH" class="search-input">
-            <!-- Populated using JavaScript -->
+            <option value="" selected>Select Distribution North</option>
+            <!-- Options populated using JavaScript -->
         </select>
 
         <select id="distribution-south" name="DISTRIBUTION_SOUTH" class="search-input">
-            <!-- Populated using JavaScript -->
+            <option value="" selected>Select Distribution South</option>
+            <!-- Options populated using JavaScript -->
         </select>
 
         <button id="fetchDataBtn">Fetch Data</button>
@@ -86,297 +90,156 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
+        // Map Initialization
         var map = L.map('map').setView([-33.4378, -70.6504], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-        // Coordinates for each region
+
+        // Region Coordinates and Names
         const coordinates = {
-        "AYP": [-18.4783, -70.3126], // Arica y Parinacota
-        "TAR": [-20.2140, -70.1522], // Tarapacá
-        "ANT": [-23.6524, -70.3954], // Antofagasta
-        "ATA": [-27.3668, -70.3323], // Atacama
-        "COQ": [-29.9533, -71.3395], // Coquimbo
-        "VAL": [-33.0472, -71.6127], // Valparaíso
-        "RME": [-33.4378, -70.6504], // Metropolitana de Santiago
-        "LBO": [-34.5755, -71.0022], // Libertador General Bernardo O'Higgins
-        "MAU": [-35.4264, -71.6554], // Maule
-        "NUB": [-36.7226, -72.1114], // Ñuble
-        "BIO": [-37.4689, -72.3527], // Biobío
-        "ARA": [-38.9489, -72.3311], // Araucanía
-        "LRI": [-40.2310, -72.3311], // Los Ríos
-        "LLA": [-41.4717, -72.9369], // Los Lagos
-        "AIS": [-45.5752, -72.0662], // Aisén
-        "MAG": [-53.1638, -70.9171], // Magallanes
-        "JFE": [-33.6148, -78.8311], // Juan Fernández
-        "IPA": [-27.1127, -109.3497], // Isla de Pascua
-        "IDE": [-26.0000, -80.5333]  // Islas Desventuradas
-    };
-
-    // Nested Dropdown for Type Field
-        const typeOptions = {
-            "Arbustivas": [
-                "Arbustivas", "Arbusto o árbol pequeño", "Arbusto perenne", "Arbusto o subarbusto", 
-                "Arbusto parásito", "Arbusto suculento", "Arbusto trepador", "Arbusto"
-            ],
-            "Hierba": [
-                "Hierba", "Hierba anual", "Hierba bienal", "Hierba anual o bienal", "Hierba anual, bienal o perenne",
-                "Hierba bienal o perenne", "Hierba anual o perenne", "Hierba acuática perenne", "Hierba acuática anual",
-                "Hierba acuática anual o bienal", "Hierba epífita o saxícola perenne", "Hierba epífita o terrestre perenne",
-                "Hierba epífita perenne", "Hierba anual o subarbusto", "Hierba anual, hierba perenne o subarbusto",
-                "Hierba bienal o subarbusto", "Hierba perenne o subarbusto", "Hierba parásita anual",
-                "Hierba parásita perenne", "Hierba saxícola perenne", "Hierba suculenta anual", "Hierba suculenta perenne",
-                "Hierba terrestre o saxícola perenne", "Hierba trepadora anual", "Hierba trepadora anual o bienal",
-                "Hierba trepadora perenne"
-            ],
-            "Subarbusto": [
-                "Subarbusto", "Subarbusto perenne", "Subarbustiva", "Subarbusto epífito o terrestre",
-                "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador"
-            ],
-            "Árbol": [
-                "Árbol", "Árbol suculento"
-            ]
+            "AYP": [-18.4783, -70.3126], "TAR": [-20.2140, -70.1522], "ANT": [-23.6524, -70.3954],
+            "ATA": [-27.3668, -70.3323], "COQ": [-29.9533, -71.3395],             "VAL": [-33.0472, -71.6127], "RME": [-33.4378, -70.6504], "LBO": [-34.5755, -71.0022],
+            "MAU": [-35.4264, -71.6554], "NUB": [-36.7226, -72.1114], "BIO": [-37.4689, -72.3527],
+            "ARA": [-38.9489, -72.3311], "LRI": [-40.2310, -72.3311], "LLA": [-41.4717, -72.9369],
+            "AIS": [-45.5752, -72.0662], "MAG": [-53.1638, -70.9171], "JFE": [-33.6148, -78.8311],
+            "IPA": [-27.1127, -109.3497], "IDE": [-26.0000, -80.5333]
         };
-        populateTypeDropdown('type', typeOptions);
 
-        // Populate Distribution North and South dropdowns
-        const regions = Object.keys(coordinates).map(code => ({ code, name: code /* Add logic to convert code to name if needed */ }));
-        populateDropdown('distribution-north', regions);
-        populateDropdown('distribution-south', regions);
-
-        // Populate Type dropdown with nested options
-        const types = {
-            "Subarbusto": ["Subarbusto epífito o terrestre", "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador", "Subarbusto"],
-            // Add other type categories and their options...
-        };
-        populateTypeDropdown('type', types);
-        populateRegionDropdowns(['distribution-north', 'distribution-south'], coordinates);
- 
-        // Dropdown population function
-        function populateDropdown(selectId, options, defaultText) {
-            const select = document.getElementById(selectId);
-            const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = defaultText;
-            defaultOption.selected = true;
-            select.appendChild(defaultOption);
-
-            options.forEach(name => {
-                const optionElement = document.createElement('option');
-                optionElement.value = name;
-                optionElement.textContent = name;
-                select.appendChild(optionElement);
+        // Function to populate dropdowns
+        function populateDropdown(selectElementId, options) {
+            const selectElement = document.getElementById(selectElementId);
+            options.forEach(function(optionValue) {
+                let option = document.createElement("option");
+                option.value = optionValue;
+                option.text = optionValue.charAt(0).toUpperCase() + optionValue.slice(1); // Capitalize first letter
+                selectElement.add(option);
             });
         }
 
-        function populateRegionDropdowns(ids, coordinates) {
-            const regionNames = {
-                "AYP": "Arica y Parinacota", "TAR": "Tarapacá", "ANT": "Antofagasta", "ATA": "Atacama",
-                "COQ": "Coquimbo", "VAL": "Valparaíso", "RME": "Metropolitana de Santiago", "LBO": "Libertador Bernardo O’Higgins",
-                "MAU": "Maule", "NUB": "Ñuble", "BIO": "Biobío", "ARA": "Araucanía", "LRI": "Los Ríos",
-                "LLA": "Los Lagos", "AIS": "Aisén", "MAG": "Magallanes", "JFE": "Juan Fernández",
-                "IPA": "Isla de Pascua", "IDE": "Islas Desventuradas"
-            };
-            ids.forEach(id => {
-                const select = document.getElementById(id);
-                const defaultOption = document.createElement('option');
-                defaultOption.value = "";
-                defaultOption.textContent = "Select Region";
-                defaultOption.selected = true;
-                select.appendChild(defaultOption);
-
-                for (let regionCode in coordinates) {
-                    const option = document.createElement('option');
-                    option.value = regionCode;
-                    option.textContent = regionNames[regionCode];
-                    select.appendChild(option);
-                }
-            });
-        }
-
+        // Function to populate Type dropdown with nested options
         function populateTypeDropdown(selectId, typeOptions) {
             const select = document.getElementById(selectId);
-            const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = "Select Type";
-            defaultOption.selected = true;
-            select.appendChild(defaultOption);
-
-            for (let typeCategory in typeOptions) {
+            for (const [category, values] of Object.entries(typeOptions)) {
                 const optgroup = document.createElement('optgroup');
-                optgroup.label = typeCategory;
-                typeOptions[typeCategory].forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    optgroup.appendChild(optionElement);
+                optgroup.label = category;
+                values.forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = value;
+                    optgroup.appendChild(option);
                 });
                 select.appendChild(optgroup);
             }
         }
-        // Function to add markers based on DISTRIBUTION values
-        function addMarkers(distribution) {
-            distribution.split(', ').forEach(region => {
-                if (coordinates[region]) {
-                    L.marker(coordinates[region]).addTo(markers);
-                }
-            });
-        }
 
-        // Synchronize the slider and input for Altitudinal Inferior and Superior
-        const altInferiorInput = document.getElementById('altitudinal-inferior');
-        const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
-        const altSuperiorInput = document.getElementById('altitudinal-superior');
-        const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
+        // Nested type options
+        const typeOptions = {
+            "Arbustivas": ["Arbustivas", "Arbusto o árbol pequeño", "Arbusto perenne", "Arbusto o subarbusto", "Arbusto parásito", "Arbusto suculento", "Arbusto trepador", "Arbusto"],
+            "Hierba": ["Hierba", "Hierba anual", "Hierba bienal", "Hierba anual o bienal", "Hierba anual, bienal o perenne", "Hierba bienal o perenne", "Hierba anual o perenne", "Hierba acuática perenne", "Hierba acuática anual", "Hierba acuática anual o bienal", "Hierba epífita o saxícola perenne", "Hierba epífita o terrestre perenne", "Hierba epífita perenne", "Hierba anual o subarbusto", "Hierba anual, hierba perenne o subarbusto", "Hierba bienal o subarbusto", "Hierba perenne o subarbusto", "Hierba parásita anual", "Hierba parásita perenne", "Hierba saxícola perenne", "Hierba suculenta anual", "Hierba suculenta perenne", "Hierba terrestre o saxícola perenne", "Hierba trepadora anual", "Hierba trepadora anual o bienal", "Hierba trepadora perenne"],
+            "Subarbusto": ["Subarbusto", "Subarbusto perenne", "Subarbustiva", "Subarbusto epífito o terrestre", "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador"],
+            "Árbol": ["Árbol", "Árbol suculento"]
+        };
 
-        function syncSliderInput(slider, input) {
-            input.addEventListener('input', function() {
-                slider.value = this.value;
-            });
-            slider.addEventListener('input', function() {
-                input.value = this.value;
-            });
-        }
+        // Populate Type dropdown
+        populateTypeDropdown('type', typeOptions);
 
-        syncSliderInput(altInferiorSlider, altInferiorInput);
-        syncSliderInput(altSuperiorSlider, altSuperiorInput);
+        // Populate Distribution dropdowns with region names
+        const regionNames = Object.keys(coordinates).map(code => ({
+            code: code,
+            name: coordinates[code]
+        }));
+        populateDropdown('distribution-north', regionNames.map(region => region.name));
+        populateDropdown('distribution-south', regionNames.map(region => region.name));
 
+        // Event listeners for fetching and clearing data
         document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
         document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-function fetchData() {
-    const searchParams = new URLSearchParams();
-
-    // Add non-altitudinal input values to the search parameters if provided
-    document.querySelectorAll('.search-input').forEach(input => {
-        const value = input.value.trim();
-        if (value) {
-            searchParams.append(input.name, value);
-        }
-    });
-
-    // Only add altitudinal values if they are provided and valid
-    const altInferiorValue = altInferiorInput.value.trim();
-    const altSuperiorValue = altSuperiorInput.value.trim();
-
-    if (altInferiorValue) {
-        searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
-    }
-    if (altSuperiorValue) {
-        searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
-    }
-
-    displayMessage("Fetching data...", false);
-
-    fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.length > 0) {
-                displayMessage("Data received successfully", false);
-                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-                markers.clearLayers();
-                data.forEach(item => {
-                    if (item.DISTRIBUTION) {
-                        addMarkers(item.DISTRIBUTION);
+        // Fetch data function
+        function fetchData() {
+            const searchParams = new URLSearchParams();
+            document.querySelectorAll('.search-input').forEach(input => {
+                const value = input.value.trim();
+                if (value) {
+                    // Convert full region names to codes for 'distribution-north' and 'distribution-south'
+                    if (input.id === 'distribution-north' || input.id === 'distribution-south') {
+                        const regionCode = getKeyByValue(regionNames, value);
+                        searchParams.append(input.name.toUpperCase(), regionCode);
+                    } else {
+                        searchParams.append(input.name.toUpperCase(), value);
                     }
+                }
+            });
+
+            // Append altitudinal values if they are provided
+            const altInferiorValue = document.getElementById('altitudinal-inferior').value.trim();
+            const altSuperiorValue = document.getElementById('altitudinal-superior').value.trim();
+            if (altInferiorValue) searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
+            if (altSuperiorValue) searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
+
+            fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    displayMessage("Data received successfully.", false);
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                    // Clear existing markers and add new ones
+                    clearMarkers();
+                    data.forEach(item => addMarkers(item.DISTRIBUTION));
+                })
+                .catch(error => {
+                    displayMessage(`Fetch error: ${error.message}`, true);
                 });
-            } else {
-                displayMessage("No data found for the given criteria", false);
-                document.getElementById('data').textContent = '[]';
-                markers.clearLayers();
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            displayMessage('Fetch error: ' + error.message, true);
-        });
-}
-
-function displayMessage(message, isError) {
-    const messageElement = document.getElementById('messages');
-    messageElement.textContent = message;
-    messageElement.style.color = isError ? 'red' : 'green';
-}
-
-function clearData() {
-    document.getElementById('data').textContent = '';
-    displayMessage("", false);
-    document.querySelectorAll('.search-input').forEach(input => {
-        input.value = '';
-        if (input.getAttribute('type') === 'range') {
-            input.value = input.getAttribute('min');
         }
-    });
-    altInferiorSlider.value = altInferiorSlider.min;
-    altSuperiorSlider.value = altSuperiorSlider.max;
-    markers.clearLayers();
-}
-// Utility function to find key by value
+
+        // Clear data function
+        function clearData() {
+            document.getElementById('data').textContent = '';
+            displayMessage("", false);
+            document.querySelectorAll('.search-input').forEach(input => {
+                input.value = '';
+            });
+            clearMarkers();
+        }
+
+        // Display message function
+        function displayMessage(message, isError) {
+            const messageElement = document.getElementById('messages');
+            messageElement.textContent = message;
+            messageElement.style.color = isError ? 'red' : 'green';
+        }
+
+        // Clear markers function
+        function clearMarkers() {
+            // Your logic to clear markers on the map
+        }
+
+        // Utility function to find key by value for regions
         function getKeyByValue(object, value) {
             return Object.keys(object).find(key => object[key] === value);
         }
-// Ensure that the sliders are linked to the text inputs
-syncSliderInput(altInferiorSlider, altInferiorInput);
-syncSliderInput(altSuperiorSlider, altSuperiorInput);
 
-// Add event listeners to buttons
-// Fetch Data Function
-document.getElementById('fetchDataBtn').addEventListener('click', function() {
-    const searchParams = new URLSearchParams();
+        // Add markers function
+        function addMarkers(distribution) {
+            // Your logic to add markers on the map
+        }
 
-    // Convert full region names to codes
-    const northRegion = document.getElementById('distribution-north').value;
-    const southRegion = document.getElementById('distribution-south').value;
-    if (northRegion) searchParams.append('DISTRIBUTION_NORTH', getKeyByValue(regionNames, northRegion));
-    if (southRegion) searchParams.append('DISTRIBUTION_SOUTH', getKeyByValue(regionNames, southRegion));
+        // Initialize slider synchronization
+        syncSliderInput('altitudinal-inferior', 'altitudinal-inferior-slider');
+        syncSliderInput('altitudinal-superior', 'altitudinal-superior-slider');
 
-document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
-document.getElementById('clearDataBtn').addEventListener('click', clearData);
-
-
-        // Autocomplete functionality for specific search inputs
-        document.querySelectorAll('.search-input').forEach(input => {
-            const dataListId = input.getAttribute('list');
-            const dataList = document.getElementById(dataListId);
-
-            input.addEventListener('input', function() {
-                const value = this.value;
-                if (value.length < 1) {
-                    dataList.innerHTML = '';
-                    return;
-                }
-                fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name.toUpperCase()}&prefix=${encodeURIComponent(value)}`)
-                    .then(response => response.json())
-                    .then(items => {
-                        dataList.innerHTML = '';
-                        // Limit to the first 10 items
-                        items.slice(0, 10).forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item;
-                            dataList.appendChild(option);
-                        });
-                        if (!dataList.options.length) {
-                            const option = document.createElement('option');
-                            option.value = "No suggestions found";
-                            option.disabled = true;
-                            dataList.appendChild(option);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Autocomplete error:', error);
-                        dataList.innerHTML = '';
-                        const option = document.createElement('option');
-                        option.value = "Error loading suggestions";
-                        option.disabled = true;
-                        dataList.appendChild(option);
-                    });
-            });
-        });
+        // Slider synchronization function
+        function syncSliderInput(inputId, sliderId) {
+            const input = document.getElementById(inputId);
+            const slider = document.getElementById(sliderId);
+            input.addEventListener('change', () => { slider.value = input.value; });
+            slider.addEventListener('change', () => { input.value = slider.value; });
+        }
     </script>
 </body>
 </html>
+
+
