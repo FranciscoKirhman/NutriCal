@@ -150,9 +150,8 @@ fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
         displayMessage("Data received successfully");
         document.getElementById('data').textContent = JSON.stringify(data, null, 2);
 
-        // Clear existing pins
+        // Clear existing markers
         map.eachLayer(layer => {
-            // Check if the layer is a marker before removing it
             if (layer instanceof L.Marker) {
                 map.removeLayer(layer);
             }
@@ -160,16 +159,25 @@ fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
 
         // Iterate over each item in the data array
         data.forEach(item => {
+            let popupContent = `ID: ${item.ID}<br>`;
+            if (item.GENUS && item.SPECIFIC_EPITHET) {
+                popupContent += `Species: ${item.GENUS} ${item.SPECIFIC_EPITHET}<br>`;
+            } else if (item.SPECIES) {
+                popupContent += `Species: ${item.SPECIES}<br>`;
+            }
+            popupContent += `Type: ${item.TYPE}<br>`;
+            popupContent += `Origin: ${item.ORIGIN}<br>`;
+
             // Handle DISTRIBUTION_NORTH field
             if (item.DISTRIBUTION_NORTH && coordinates[item.DISTRIBUTION_NORTH]) {
                 L.marker(coordinates[item.DISTRIBUTION_NORTH]).addTo(map)
-                    .bindPopup(`ID: ${item.ID}, North Distribution: ${item.DISTRIBUTION_NORTH}`);
+                    .bindPopup(popupContent + `North Distribution: ${item.DISTRIBUTION_NORTH}`);
             }
 
             // Handle DISTRIBUTION_SOUTH field
             if (item.DISTRIBUTION_SOUTH && coordinates[item.DISTRIBUTION_SOUTH]) {
                 L.marker(coordinates[item.DISTRIBUTION_SOUTH]).addTo(map)
-                    .bindPopup(`ID: ${item.ID}, South Distribution: ${item.DISTRIBUTION_SOUTH}`);
+                    .bindPopup(popupContent + `South Distribution: ${item.DISTRIBUTION_SOUTH}`);
             }
         });
     })
