@@ -44,81 +44,65 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-    // Synchronize the slider and input for Altitudinal Inferior
-    const altInferiorInput = document.getElementById('altitudinal-inferior');
-    const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
-    altInferiorInput.addEventListener('input', () => {
-        altInferiorSlider.value = altInferiorInput.value;
-    });
-    altInferiorSlider.addEventListener('input', () => {
-        altInferiorInput.value = altInferiorSlider.value;
-    });
+        document.addEventListener('DOMContentLoaded', function() {
+            const altInferiorInput = document.getElementById('altitudinal-inferior');
+            const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+            const altSuperiorInput = document.getElementById('altitudinal-superior');
+            const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
 
-    // Synchronize the slider and input for Altitudinal Superior
-    const altSuperiorInput = document.getElementById('altitudinal-superior');
-    const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
-    altSuperiorInput.addEventListener('input', () => {
-        altSuperiorSlider.value = altSuperiorInput.value;
-    });
-    altSuperiorSlider.addEventListener('input', () => {
-        altSuperiorInput.value = altSuperiorSlider.value;
-    });
-
-    document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
-    document.getElementById('clearDataBtn').addEventListener('click', clearData);
-
-    function fetchData() {
-        const searchParams = new URLSearchParams();
-        document.querySelectorAll('input[type=text], input[type=number]').forEach(input => {
-            if (input.value && input.name) {
-                searchParams.append(input.name, input.value);
+            function syncInputAndSlider(input, slider) {
+                input.addEventListener('input', () => slider.value = input.value);
+                slider.addEventListener('input', () => input.value = slider.value);
             }
-        });
 
-        displayMessage("Fetching data...");
+            syncInputAndSlider(altInferiorInput, altInferiorSlider);
+            syncInputAndSlider(altSuperiorInput, altSuperiorSlider);
 
-        fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
+            document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+            document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+            function fetchData() {
+                const searchParams = new URLSearchParams();
+                document.querySelectorAll('input[type=text], input[type=number], select').forEach(input => {
+                    if (input.value && input.name) searchParams.append(input.name, input.value);
+                });
+        
+                fetch(`https://speciesdb.ddns.net/query?${searchParams}`)
+                    .then(response => response.ok ? response.json() : Promise.reject('Failed to load'))
+                    .then(data => {
+                        document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                        document.getElementById('messages').textContent = 'Data fetched successfully.';
+                     })
+                     .catch(error => {
+                        document.getElementById('messages').textContent = `Fetch error: ${error}`;
+                      });
+               }
+
+                function displayMessage(message, isError = false) {
+                    const messageElement = document.getElementById('messages');
+                    messageElement.textContent = message;
+                    messageElement.style.color = isError ? 'red' : 'green';
                 }
-                return response.json();
-            })
-            .then(data => {
-                displayMessage("Data fetched successfully.");
-                document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                console.error('Fetch error:', error);
-                displayMessage(`Fetch error: ${error.message}`, true);
-            });
-    }
 
-    function displayMessage(message, isError = false) {
-        const messageElement = document.getElementById('messages');
-        messageElement.textContent = message;
-        messageElement.style.color = isError ? 'red' : 'green';
-    }
-
-    function clearData() {
-        document.getElementById('data').textContent = '';
-        document.getElementById('messages').textContent = '';
-        document.querySelectorAll('input[type=text], input[type=number], input[type=range]').forEach(input => {
-            // Reset text and number inputs to empty
-            input.value = '';
-    
-            // For range inputs, set them to an empty string instead of their min values
-            if (input.type === 'range') {
-                input.value = ''; // Set slider inputs to empty values
-            }
-        });
-    
-        // Also reset altitudinal inputs to empty values for consistency
-        altInferiorInput.value = '';
-        altSuperiorSlider.value = '';
-        altSuperiorInput.value = '';
-        altInferiorSlider.value = '';
-    }
+                function clearData() {
+                    document.getElementById('data').textContent = '';
+                    document.getElementById('messages').textContent = '';
+                    document.querySelectorAll('input[type=text], input[type=number], input[type=range]').forEach(input => {
+                        // Reset text and number inputs to empty
+                        input.value = '';
+                
+                        // For range inputs, set them to an empty string instead of their min values
+                        if (input.type === 'range') {
+                            input.value = ''; // Set slider inputs to empty values
+                        }
+                    });
+                
+                    // Also reset altitudinal inputs to empty values for consistency
+                    altInferiorInput.value = '';
+                    altSuperiorSlider.value = '';
+                    altSuperiorInput.value = '';
+                    altInferiorSlider.value = '';
+                }
 
 </script>
 
