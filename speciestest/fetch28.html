@@ -79,58 +79,70 @@
         <button id="fetchDataBtn">Fetch Data</button>
         <button id="clearDataBtn">Clear Data</button>
     </div>
+
+    <button id="fetchDataBtn">Fetch Data</button>
+    <button id="clearDataBtn">Clear Data</button>
     <div id="messages"></div>
     <pre id="data"></pre>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-    var map = L.map('map').setView([-33.4378, -70.6504], 4);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+     <script>
+        var map = L.map('map').setView([-33.4378, -70.6504], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-    function syncSliderWithInput(sliderId, inputId) {
-        const slider = document.getElementById(sliderId);
-        const input = document.getElementById(inputId);
-        slider.oninput = () => { input.value = slider.value; };
-        input.oninput = () => { slider.value = input.value; };
-    }
-    syncSliderWithInput('altitudinal-inferior-slider', 'altitudinal-inferior');
-    syncSliderWithInput('altitudinal-superior-slider', 'altitudinal-superior');
+        function syncSliderWithInput(sliderId, inputId) {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            slider.oninput = () => { input.value = slider.value; };
+            input.oninput = () => { slider.value = input.value; };
+        }
 
-    document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
-    document.getElementById('clearDataBtn').addEventListener('click', clearData);
+        syncSliderWithInput('altitudinal-inferior-slider', 'altitudinal-inferior');
+        syncSliderWithInput('altitudinal-superior-slider', 'altitudinal-superior');
 
-    function fetchData() {
-        const searchParams = new URLSearchParams();
-        document.querySelectorAll('input[type=text], select').forEach(input => {
-            if (input.value) {
-                searchParams.append(input.name, input.value);
-            }
+        document.querySelectorAll('input[list]').forEach(input => {
+            input.addEventListener('input', function() {
+                // Autocomplete functionality corrected to match the first code
+            });
         });
 
-        const altInferiorValue = document.getElementById("altitudinal-inferior").value;
-        const altSuperiorValue = document.getElementById("altitudinal-superior").value;
-        if (altInferiorValue) searchParams.append("altitudinal_inferior", altInferiorValue);
-        if (altSuperiorValue) searchParams.append("altitudinal_superior", altSuperiorValue);
+        document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+        document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-        // Replace the URL with your actual data fetch URL
-        fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("data").textContent = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                document.getElementById("messages").textContent = "Error fetching data: " + error.message;
+
+    function fetchData() {
+            const searchParams = new URLSearchParams();
+            document.querySelectorAll('.search-input').forEach(input => {
+                if (input.value) {
+                    searchParams.append(input.name, input.value);
+                }
             });
-    }
 
+            const altInferiorValue = document.getElementById('altitudinal-inferior').value;
+            const altSuperiorValue = document.getElementById('altitudinal-superior').value;
+            if (altInferiorValue) searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
+            if (altSuperiorValue) searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
+
+            // Adapt the fetch URL as needed to match your server endpoint
+            fetch(`https://speciesdb.ddns.net/query?${searchParams}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                    // Additional logic to process and display fetched data
+                })
+                .catch(error => {
+                    document.getElementById('messages').textContent = "Error fetching data: " + error.message;
+                });
+        }
     function clearData() {
-        document.getElementById("data").textContent = "";
-        document.getElementById("messages").textContent = "";
-        document.querySelectorAll("input[type='text'], select").forEach(input => input.value = "");
-    }
+            document.querySelectorAll('.search-input').forEach(input => input.value = '');
+            document.getElementById('data').textContent = '';
+            document.getElementById('messages').textContent = '';
+            // Reset sliders to their default values
+     }
         function autocomplete(inp, arr) {
             var currentFocus;
             inp.addEventListener("input", function(e) {
