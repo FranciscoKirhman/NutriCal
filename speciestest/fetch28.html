@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Species Database Query with Map and Autocomplete</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .range-field { display: flex; align-items: center; margin-bottom: 20px; }
+        .range-field label { margin-right: 10px; }
+        input, select { margin-right: 10px; }
+        #map { width: 100%; height: 400px; margin-top: 20px; }
+        .autocomplete { position: relative; display: inline-block; }
+        .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; }
+        .autocomplete-items div { padding: 10px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #d4d4d4; }
+        .autocomplete-items div:hover { background-color: #e9e9e9; }
+        .autocomplete-active { background-color: DodgerBlue !important; color: #ffffff; }
+    </style>
+</head>
+<body>
+    <h1>Species Database Query with Map and Autocomplete</h1>
+    <div>
+        <div class="range-field">
+            <label for="altitudinal-inferior">Altitudinal Inferior:</label>
+            <input type="number" id="altitudinal-inferior" name="altitudinal_inferior" value="0">
+            <input type="range" id="altitudinal-inferior-slider" min="0" max="5000" value="0" step="10">
+        </div>
+        <div class="range-field">
+            <label for="altitudinal-superior">Altitudinal Superior:</label>
+            <input type="number" id="altitudinal-superior" name="altitudinal_superior" value="5000">
+            <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
+        </div>
+
+        <div class="autocomplete" style="width:300px;">
+            <input id="id-input" type="text" name="ID" placeholder="ID">
+        </div>
+        <div class="autocomplete" style="width:300px;">
+            <input id="specific-epithet-input" type="text" name="SPECIFIC_EPITHET" placeholder="Specific Epithet">
+        </div>
+        <div class="autocomplete" style="width:300px;">
+            <input id="genus-input" type="text" name="GENUS" placeholder="Genus">
+        </div>
+        <div class="autocomplete" style="width:300px;">
+            <input id="distribution-input" type="text" name="DISTRIBUTION" placeholder="Distribution">
+        </div>
+
+        <label for="type-select">Type:</label>
+        <select id="type-select" name="type">
+            <option value="" selected>Select Type</option>
+            <!-- Type options populated here -->
+        </select>
+        
+        <label for="origin-select">Origin:</label>
+        <select id="origin-select" name="origin">
+            <option value="" selected>Select Origin</option>
+            <option value="Endemica">Endémica</option>
+            <option value="Introducida">Introducida</option>
+            <option value="Nativa">Nativa</option>
+        </select>
+        
+        <label for="distribution-north-select">Distribution North:</label>
+        <select id="distribution-north-select" name="distribution_north">
+            <option value="" selected>Select Distribution North</option>
+            <!-- Distribution North options populated here -->
+        </select>
+        
+        <label for="distribution-south-select">Distribution South:</label>
+        <select id="distribution-south-select" name="distribution_south">
+            <option value="" selected>Select Distribution South</option>
+            <!-- Distribution South options populated here -->
+        </select>
+
+        <button id="fetchDataBtn">Fetch Data</button>
+        <button id="clearDataBtn">Clear Data</button>
+    </div>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([-33.4378, -70.6504], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        function syncSliderWithInput(sliderId, inputId) {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            slider.oninput = () => { input.value = slider.value; };
+            input.oninput = () => { slider.value = input.value; };
+        }
+        syncSliderWithInput('altitudinal-inferior-slider', 'altitudinal-inferior');
+        syncSliderWithInput('altitudinal-superior-slider', 'altitudinal-superior');
+
+        function autocomplete(inp, arr) {
+            var currentFocus;
+            inp.addEventListener("input", function(e) {
+                var a, b, i, val = this.value;
+                closeAllLists();
+                if (!val) { return false;}
+                currentFocus = -1;
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                this.parentNode.appendChild(a);
+                for (i = 0; i < arr.length; i++) {
+                  if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                    b = document.createElement("DIV");
+                    b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                    b.innerHTML += arr[i].substr(val.length);
+                    b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                    b.addEventListener("click", function(e) {
+                        inp.value = this.getElementsByTagName("input")[0].value;
+                        closeAllLists();
+                    });
+                    a.appendChild(b);
+                  }
+                }
+            });
+            inp.addEventListener("keydown", function(e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                  currentFocus++;
+                  addActive(x);
+                } else if (e.keyCode == 38) { //up
+                  currentFocus--;
+                  addActive(x);
+                } else if (e.keyCode == 13) {
+                  e.preventDefault();
+                  if (currentFocus > -1) {
+                    if (x) x[currentFocus].click();
+                  }
+                }
+            });
+            function addActive(x) {
+              if (!x) return false;
+              removeActive(x);
+              if (currentFocus >= x.length) currentFocus = 0;
+              if (currentFocus < 0) currentFocus = (x.length - 1);
+              x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+              for (var i = 0; i < x.length; i++) {
+                x[i].classList.remove("autocomplete-active");
+              }
+            }
+            function closeAllLists(elmnt) {
+              var x = document.getElementsByClassName("autocomplete-items");
+              for (var i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != inp) {
+                  x[i].parentNode.removeChild(x[i]);
+                }
+              }
+            }
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+        const speciesIDs = []; // Populate with IDs
+        const specificEpithets = []; // Populate with Specific Epithets
+        const genera = []; // Populate with Genera
+        const distributions = []; // Populate with Distributions
+        autocomplete(document.getElementById("id-input"), speciesIDs);
+        autocomplete(document.getElementById("specific-epithet-input"), specificEpithets);
+        autocomplete(document.getElementById("genus-input"), genera);
+        autocomplete(document.getElementById("distribution-input"), distributions);
+
+        const typeOptions = {
+            "Arbustivas": ["Arbustivas", "Arbusto o árbol pequeño", "Arbusto perenne", "Arbusto o subarbusto", "Arbusto parásito", "Arbusto suculento", "Arbusto trepador", "Arbusto"],
+            "Hierba": ["Hierba", "Hierba anual", "Hierba bienal", "Hierba anual o bienal", "Hierba anual, bienal o perenne", "Hierba bienal o perenne", "Hierba anual o perenne", "Hierba acuática perenne", "Hierba acuática anual", "Hierba acuática anual o bienal", "Hierba epífita o saxícola perenne", "Hierba epífita o terrestre perenne", "Hierba epífita perenne", "Hierba anual o subarbusto", "Hierba anual, hierba perenne o subarbusto", "Hierba bienal o subarbusto", "Hierba perenne o subarbusto", "Hierba parásita anual", "Hierba parásita perenne", "Hierba saxícola perenne", "Hierba suculenta anual", "Hierba suculenta perenne", "Hierba terrestre o saxícola perenne", "Hierba trepadora anual", "Hierba trepadora anual o bienal", "Hierba trepadora perenne"],
+            "Subarbusto": ["Subarbusto", "Subarbusto perenne", "Subarbustiva", "Subarbusto epífito o terrestre", "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador"],
+            "Árbol": ["Árbol", "Árbol suculento"]
+        };
+
+        function populateTypeDropdown() {
+            const select = document.getElementById("type-select");
+            for (const category in typeOptions) {
+                const group = document.createElement("optgroup");
+                group.label = category;
+                typeOptions[category].forEach(function(option) {
+                    const optionElement = document.createElement("option");
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    group.appendChild(optionElement);
+                });
+                select.appendChild(group);
+            }
+        }
+        populateTypeDropdown();
+
+        const regionNames = {
+            "AYP": "Arica y Parinacota",
+            "TAR": "Tarapacá",
+            "ANT": "Antofagasta",
+            "ATA": "Atacama",
+            "COQ": "Coquimbo",
+            "VAL": "Valparaíso",
+            "RME": "Metropolitana de Santiago",
+            "LBO": "Libertador General Bernardo O'Higgins",
+            "MAU": "Maule",
+            "NUB": "Ñuble",
+            "BIO": "Biobío",
+            "ARA": "Araucanía",
+            "LRI": "Los Ríos",
+            "LLA": "Los Lagos",
+            "AIS": "Aisén",
+            "MAG": "Magallanes",
+            "JFE": "Juan Fernández",
+            "IPA": "Isla de Pascua",
+            "IDE": "Islas Desventuradas"
+        };
+
+        function populateRegionSelects() {
+            const northSelect = document.getElementById("distribution-north-select");
+            const southSelect = document.getElementById("distribution-south-select");
+            Object.entries(regionNames).forEach(([code, name]) => {
+                let optionNorth = new Option(name, code);
+                let optionSouth = new Option(name, code);
+                northSelect.add(optionNorth);
+                southSelect.add(optionSouth);
+            });
+        }
+        populateRegionSelects();
+
+        document.getElementById("fetchDataBtn").addEventListener("click", fetchData);
+        document.getElementById("clearDataBtn").addEventListener("click", clearData);
+
+        function fetchData() {
+            const searchParams = new URLSearchParams();
+
+            // Process text inputs for autocomplete fields
+            ["id-input", "specific-epithet-input", "genus-input", "distribution-input"].forEach((id) => {
+                const inputElement = document.getElementById(id);
+                if (inputElement.value.trim() !== "") {
+                    searchParams.append(inputElement.name, inputElement.value);
+                }
+            });
+
+            // Process selects
+            ["type-select", "origin-select", "distribution-north-select", "distribution-south-select"].forEach((id) => {
+                const selectElement = document.getElementById(id);
+                if (selectElement.value !== "") {
+                    searchParams.append(selectElement.name, selectElement.value);
+                }
+            });
+
+            // Process range inputs
+            const altInferiorValue = document.getElementById("altitudinal-inferior").value;
+            const altSuperiorValue = document.getElementById("altitudinal-superior").value;
+            if (altInferiorValue) searchParams.append("altitudinal_inferior", altInferiorValue);
+            if (altSuperiorValue) searchParams.append("altitudinal_superior", altSuperiorValue);
+
+            console.log("Fetching data with params:", searchParams.toString());
+
+            // Here, replace the URL with your actual data fetch URL
+            fetch(`https://example.com/api/species?${searchParams.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Data fetched successfully:", data);
+                    document.getElementById("data").textContent = JSON.stringify(data, null, 2);
+                    // Optionally, process data to display on the map or elsewhere
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    document.getElementById("messages").textContent = "Error fetching data: " + error.message;
+                });
+        }
+
+        function clearData() {
+            document.getElementById("data").textContent = "";
+            document.getElementById("messages").textContent = "";
+            document.querySelectorAll("input[type='text'], select").forEach(input => input.value = "");
+            // Optionally, clear map markers or other data presentations
+        }
+    </script>
+</body>
+</html>
