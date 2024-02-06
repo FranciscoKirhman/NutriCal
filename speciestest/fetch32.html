@@ -208,8 +208,51 @@ function clearData() {
             "AIS": [-45.5752, -72.0662], "MAG": [-53.1638, -70.9171], "JFE": [-33.6148, -78.8311],
             "IPA": [-27.1127, -109.3497], "IDE": [-26.0000, -80.5333]
         };
+        // Corrected Region Names Definition
+        const regionNames = {
+            "AYP": "Arica y Parinacota",
+            "TAR": "Tarapacá",
+            "ANT": "Antofagasta",
+            "ATA": "Atacama",
+            "COQ": "Coquimbo",
+            "VAL": "Valparaíso",
+            "RME": "Metropolitana de Santiago",
+            "LBO": "Libertador General Bernardo O'Higgins",
+            "MAU": "Maule",
+            "NUB": "Ñuble",
+            "BIO": "Biobío",
+            "ARA": "Araucanía",
+            "LRI": "Los Ríos",
+            "LLA": "Los Lagos",
+            "AIS": "Aisén",
+            "MAG": "Magallanes",
+            "JFE": "Juan Fernández",
+            "IPA": "Isla de Pascua",
+            "IDE": "Islas Desventuradas"
+        };
 
-      
+
+// Function to Populate Distribution Dropdowns Using Names
+function populateRegionSelects() {
+    const northSelect = document.getElementById("distribution-north");
+    const southSelect = document.getElementById("distribution-south");
+    Object.entries(regionNames).forEach(([code, name]) => {
+        let optionNorth = new Option(name, code);
+        let optionSouth = new Option(name, code);
+        northSelect.add(optionNorth);
+        southSelect.add(optionSouth);
+    });
+}
+// Function to populate a dropdown (select element) with options
+function populateDropdown(selectElementId, options) {
+    const selectElement = document.getElementById(selectElementId);
+    options.forEach(optionValue => {
+        const option = document.createElement('option');
+        option.value = option.text = optionValue; // Assuming optionValue is a string
+        selectElement.appendChild(option);
+    });
+}
+   
         // Populate Distribution dropdowns
         const distributionNorthSelect = document.getElementById('distribution-north');
         const distributionSouthSelect = document.getElementById('distribution-south');
