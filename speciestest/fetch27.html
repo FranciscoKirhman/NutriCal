@@ -11,13 +11,13 @@
             align-items: center;
             margin-bottom: 10px;
         }
-        .range-field input[type=number], .search-input, select {
+        .range-field input[type=number], .search-input {
             margin: 0 5px;
             width: auto; /* Adjusted for select and input alignment */
         }
-        input[type=range] {
+        input[type=range], select {
             -webkit-appearance: none;
-            width: calc(100% - 180px); /* Adjusted for consistency */
+            width: 100%;
             margin: 0 5px;
         }
         input[type=range]:focus {
@@ -59,28 +59,30 @@
             <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
         </div>
 
-        <!-- Dropdown for Type -->
+        <!-- Autocomplete fields -->
+        <input type="text" class="search-input" name="ID" placeholder="ID" list="id-list">
+        <datalist id="id-list"></datalist>
+        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet" list="specific-epithet-list">
+        <datalist id="specific-epithet-list"></datalist>
+        <input type="text" class="search-input" name="GENUS" placeholder="Genus" list="genus-list">
+        <datalist id="genus-list"></datalist>
+
+        <!-- Other search inputs and dropdowns -->
         <select id="type" name="TYPE" class="search-input">
             <option value="" selected>Select Type</option>
-            <!-- Nested options will be populated using JavaScript -->
+            <!-- Type options populated here -->
         </select>
-
-        <!-- Dropdown for Origin -->
         <select id="origin" name="ORIGIN" class="search-input">
             <option value="" selected>Select Origin</option>
-            <option value="Endemica">Endémica</option>
-            <option value="Introducida">Introducida</option>
-            <option value="Nativa">Nativa</option>
+            <!-- Origin options populated here -->
         </select>
-
-        <!-- Dropdowns for Distribution North and South -->
         <select id="distribution-north" name="DISTRIBUTION_NORTH" class="search-input">
             <option value="" selected>Select Distribution North</option>
-            <!-- Options will be populated using JavaScript -->
+            <!-- Distribution North options populated here -->
         </select>
         <select id="distribution-south" name="DISTRIBUTION_SOUTH" class="search-input">
             <option value="" selected>Select Distribution South</option>
-            <!-- Options will be populated using JavaScript -->
+            <!-- Distribution South options populated here -->
         </select>
 
         <button id="fetchDataBtn">Fetch Data</button>
