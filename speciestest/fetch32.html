@@ -139,39 +139,45 @@ function fetchData() {
     displayMessage("Fetch button clicked, sending request...");
 
     // Replace the URL with the appropriate endpoint if necessary
-    fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            displayMessage("Data received successfully");
-            document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-        
-        // Clear existing pins
-            map.eachLayer(layer => {
-                if (!!layer.toGeoJSON) map.removeLayer(layer); // Check if layer is a marker and remove
-            });
-            // Handle DISTRIBUTION_NORTH field
-                if (item.DISTRIBUTION_NORTH && coordinates[item.DISTRIBUTION_NORTH]) {
-                    L.marker(coordinates[item.DISTRIBUTION_NORTH]).addTo(map)
-                        .bindPopup(`ID: ${item.ID}, North Distribution: ${item.DISTRIBUTION_NORTH}`);
-                }
+fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        displayMessage("Data received successfully");
+        document.getElementById('data').textContent = JSON.stringify(data, null, 2);
 
-                // Handle DISTRIBUTION_SOUTH field
-                if (item.DISTRIBUTION_SOUTH && coordinates[item.DISTRIBUTION_SOUTH]) {
-                    L.marker(coordinates[item.DISTRIBUTION_SOUTH]).addTo(map)
-                        .bindPopup(`ID: ${item.ID}, South Distribution: ${item.DISTRIBUTION_SOUTH}`);
-                }
-            });
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            displayMessage('Fetch error: ' + error.message, true);
+        // Clear existing pins
+        map.eachLayer(layer => {
+            // Check if the layer is a marker before removing it
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
         });
-}
+
+        // Iterate over each item in the data array
+        data.forEach(item => {
+            // Handle DISTRIBUTION_NORTH field
+            if (item.DISTRIBUTION_NORTH && coordinates[item.DISTRIBUTION_NORTH]) {
+                L.marker(coordinates[item.DISTRIBUTION_NORTH]).addTo(map)
+                    .bindPopup(`ID: ${item.ID}, North Distribution: ${item.DISTRIBUTION_NORTH}`);
+            }
+
+            // Handle DISTRIBUTION_SOUTH field
+            if (item.DISTRIBUTION_SOUTH && coordinates[item.DISTRIBUTION_SOUTH]) {
+                L.marker(coordinates[item.DISTRIBUTION_SOUTH]).addTo(map)
+                    .bindPopup(`ID: ${item.ID}, South Distribution: ${item.DISTRIBUTION_SOUTH}`);
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        displayMessage('Fetch error: ' + error.message, true);
+    });
+
 
 function displayMessage(message, isError = false) {
     const messageElement = document.getElementById('messages');
