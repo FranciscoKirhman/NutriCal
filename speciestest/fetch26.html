@@ -5,19 +5,18 @@
     <title>Species Database Query with Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        /* Style for slider, input fields, and map */
         .range-field {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
         }
         .range-field input[type=number], .search-input, select {
-            margin: 0 5px;
-            width: auto; /* Adjusted for better display */
+            margin-right: 10px;
+            width: auto;
         }
         input[type=range] {
             -webkit-appearance: none;
-            width: calc(100% - 180px); /* Adjusted for better display */
+            width: calc(100% - 180px);
             margin: 0 5px;
         }
         input[type=range]:focus {
@@ -47,7 +46,6 @@
 <body>
     <h1>Species Database Query with Map</h1>
     <div>
-        <!-- Range fields for Altitudinal -->
         <div class="range-field">
             <label for="altitudinal-inferior">Altitudinal Inferior:</label>
             <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="0">
@@ -59,24 +57,22 @@
             <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
         </div>
 
-        <!-- Dropdowns for Type, Origin, Distribution North, and Distribution South -->
         <select id="type" name="TYPE" class="search-input">
-            <!-- Options will be populated using JavaScript -->
+            <!-- Nested options will be populated using JavaScript -->
         </select>
 
         <select id="origin" name="ORIGIN" class="search-input">
-            <option value="">Select Origin</option>
             <option value="Endemica">Endémica</option>
             <option value="Introducida">Introducida</option>
             <option value="Nativa">Nativa</option>
         </select>
 
         <select id="distribution-north" name="DISTRIBUTION_NORTH" class="search-input">
-            <!-- Options will be populated using JavaScript -->
+            <!-- Populated using JavaScript -->
         </select>
 
         <select id="distribution-south" name="DISTRIBUTION_SOUTH" class="search-input">
-            <!-- Options will be populated using JavaScript -->
+            <!-- Populated using JavaScript -->
         </select>
 
         <button id="fetchDataBtn">Fetch Data</button>
@@ -88,13 +84,10 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Initialize the map
         var map = L.map('map').setView([-33.4378, -70.6504], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
-
         // Coordinates for each region
         const coordinates = {
         "AYP": [-18.4783, -70.3126], // Arica y Parinacota
@@ -117,6 +110,33 @@
         "IPA": [-27.1127, -109.3497], // Isla de Pascua
         "IDE": [-26.0000, -80.5333]  // Islas Desventuradas
     };
+
+    // Nested Dropdown for Type Field
+        const typeOptions = {
+            "Arbustivas": [
+                "Arbustivas", "Arbusto o árbol pequeño", "Arbusto perenne", "Arbusto o subarbusto", 
+                "Arbusto parásito", "Arbusto suculento", "Arbusto trepador", "Arbusto"
+            ],
+            "Hierba": [
+                "Hierba", "Hierba anual", "Hierba bienal", "Hierba anual o bienal", "Hierba anual, bienal o perenne",
+                "Hierba bienal o perenne", "Hierba anual o perenne", "Hierba acuática perenne", "Hierba acuática anual",
+                "Hierba acuática anual o bienal", "Hierba epífita o saxícola perenne", "Hierba epífita o terrestre perenne",
+                "Hierba epífita perenne", "Hierba anual o subarbusto", "Hierba anual, hierba perenne o subarbusto",
+                "Hierba bienal o subarbusto", "Hierba perenne o subarbusto", "Hierba parásita anual",
+                "Hierba parásita perenne", "Hierba saxícola perenne", "Hierba suculenta anual", "Hierba suculenta perenne",
+                "Hierba terrestre o saxícola perenne", "Hierba trepadora anual", "Hierba trepadora anual o bienal",
+                "Hierba trepadora perenne"
+            ],
+            "Subarbusto": [
+                "Subarbusto", "Subarbusto perenne", "Subarbustiva", "Subarbusto epífito o terrestre",
+                "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador"
+            ],
+            "Árbol": [
+                "Árbol", "Árbol suculento"
+            ]
+        };
+        populateTypeDropdown('type', typeOptions);
+
         // Populate Distribution North and South dropdowns
         const regions = Object.keys(coordinates).map(code => ({ code, name: code /* Add logic to convert code to name if needed */ }));
         populateDropdown('distribution-north', regions);
@@ -128,7 +148,46 @@
             // Add other type categories and their options...
         };
         populateTypeDropdown('type', types);
+        populateRegionDropdowns(['distribution-north', 'distribution-south'], coordinates);
 
+        function populateTypeDropdown(selectId, options) {
+            const select = document.getElementById(selectId);
+            for (let category in options) {
+                const group = document.createElement('optgroup');
+                group.label = category;
+                options[category].forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    group.appendChild(optionElement);
+                });
+                select.appendChild(group);
+            }
+        }
+
+        function populateRegionDropdowns(ids, coordinates) {
+            ids.forEach(id => {
+                const select = document.getElementById(id);
+                for (let regionCode in coordinates) {
+                    const option = document.createElement('option');
+                    option.value = regionCode;
+                    option.textContent = regionCode + " - " + getRegionName(regionCode);
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        function getRegionName(code) {
+            const regionNames = {
+                "AYP": "Arica y Parinacota", "TAR": "Tarapacá", "ANT": "Antofagasta", "ATA": "Atacama",
+                "COQ": "Coquimbo", "VAL": "Valparaíso", "RME": "Metropolitana de Santiago", "LBO": "Libertador Bernardo O’Higgins",
+                "MAU": "Maule", "NUB": "Ñuble", "BIO": "Biobío", "ARA": "Araucanía", "LRI": "Los Ríos",
+                "LLA": "Los Lagos", "AIS": "Aisén", "MAG": "Magallanes", "JFE": "Juan Fernández",
+                "IPA": "Isla de Pascua", "IDE": "Islas Desventuradas"
+            };
+            return regionNames[code] || code;
+        }
+        
         function populateDropdown(selectId, options) {
             const select = document.getElementById(selectId);
             options.forEach(option => {
