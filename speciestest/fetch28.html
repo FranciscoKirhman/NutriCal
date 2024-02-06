@@ -315,43 +315,31 @@ populateTypeDropdown(); // Make sure to call this function
             // Optionally, clear map markers or other data presentations
         }
            // Autocomplete functionality for specific search inputs
-document.querySelectorAll('.search-input').forEach(input => {
-    const dataListId = input.getAttribute('list');
-    const dataList = document.getElementById(dataListId);
+        document.querySelectorAll('input[list]').forEach(input => {
+            input.addEventListener('input', function() {
+                const dataListId = this.getAttribute('list');
+                const dataList = document.getElementById(dataListId);
+                const value = this.value;
 
-    input.addEventListener('input', function() {
-        const value = this.value;
-        if (value.length < 1) {
-            dataList.innerHTML = '';
-            return;
-        }
-        fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name.toUpperCase()}&prefix=${encodeURIComponent(value)}`)
-            .then(response => response.json())
-            .then(items => {
-                dataList.innerHTML = '';
-                // Limit to the first 10 items
-                items.slice(0, 10).forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item;
-                    dataList.appendChild(option);
-                });
-                if (!dataList.options.length) {
-                    const option = document.createElement('option');
-                    option.value = "No suggestions found";
-                    option.disabled = true;
-                    dataList.appendChild(option);
+                if (value.length < 1) {
+                    dataList.innerHTML = '';
+                    return;
                 }
-            })
-            .catch(error => {
-                console.error('Autocomplete error:', error);
-                dataList.innerHTML = '';
-                const option = document.createElement('option');
-                option.value = "Error loading suggestions";
-                option.disabled = true;
-                dataList.appendChild(option);
+
+                // Example API call - adjust URL and parameters as necessary
+                fetch(`https://speciesdb.ddns.net/autocomplete?column=${this.name.toUpperCase()}&prefix=${encodeURIComponent(value)}`)
+                    .then(response => response.json())
+                    .then(items => {
+                        dataList.innerHTML = ''; // Clear existing options
+                        items.forEach(item => {
+                            let option = document.createElement('option');
+                            option.value = item;
+                            dataList.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Autocomplete error:', error));
             });
-    });
-});
+        });
     </script>
 </body>
 </html>
