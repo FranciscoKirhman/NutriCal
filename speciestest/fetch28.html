@@ -175,21 +175,22 @@
             "Árbol": ["Árbol", "Árbol suculento"]
         };
 
-        function populateTypeDropdown() {
-            const select = document.getElementById("type-select");
-            for (const category in typeOptions) {
-                const group = document.createElement("optgroup");
-                group.label = category;
-                typeOptions[category].forEach(function(option) {
-                    const optionElement = document.createElement("option");
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    group.appendChild(optionElement);
-                });
-                select.appendChild(group);
-            }
-        }
-        populateTypeDropdown();
+function populateTypeDropdown() {
+    const select = document.getElementById("type-select"); // Ensure this ID matches your HTML
+    for (const category in typeOptions) {
+        const group = document.createElement("optgroup");
+        group.label = category;
+        typeOptions[category].forEach(function(option) {
+            const optionElement = document.createElement("option");
+            optionElement.value = option;
+            optionElement.textContent = option;
+            group.appendChild(optionElement);
+        });
+        select.appendChild(group);
+    }
+}
+populateTypeDropdown(); // Make sure to call this function
+
 
         const regionNames = {
             "AYP": "Arica y Parinacota",
