@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Species Database Query</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Style for slider and input fields */
+        .range-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .range-field input[type=number], .search-input {
+            margin: 0 5px;
+            width: 80px;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: calc(100% - 10px);
+            margin: 0 5px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Species Database Query</h1>
+    <div>
+        <!-- Range fields for Altitudinal -->
+        <div class="range-field">
+            <label for="altitudinal-inferior">Altitudinal Inferior:</label>
+            <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="">
+            <input type="range" id="altitudinal-inferior-slider" min="0" max="5000" value="" step="10">
+        </div>
+        <div class="range-field">
+            <label for="altitudinal-superior">Altitudinal Superior:</label>
+            <input type="number" id="altitudinal-superior" name="ALTITUDINAL_SUPERIOR" value="">
+            <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="" step="10">
+        </div>
+        <!-- Search inputs with autocomplete for various fields -->
+        <input type="text" class="search-input" name="ID" placeholder="ID" list="id-list">
+        <datalist id="id-list"></datalist>
+
+        <input type="text" class="search-input" name="SPECIFIC_EPITHET" placeholder="Specific Epithet" list="specific-epithet-list">
+        <datalist id="specific-epithet-list"></datalist>
+
+        <input type="text" class="search-input" name="GENUS" placeholder="Genus" list="genus-list">
+        <datalist id="genus-list"></datalist>
+
+        <input type="text" class="search-input" name="TYPE" placeholder="Type" list="type-list">
+        <datalist id="type-list"></datalist>
+
+        <input type="text" class="search-input" name="ORIGIN" placeholder="Origin" list="origin-list">
+        <datalist id="origin-list"></datalist>
+
+        <input type="text" class="search-input" name="DISTRIBUTION" placeholder="Distribution">
+        <datalist id="DISTRIBUTION-list"></datalist>
+        
+        <select id="distribution-north" name="DISTRIBUTION_NORTH" class="search-input">
+        <option value="" selected>Select Distribution North</option>
+        <!-- Options will be populated using JavaScript -->
+    </select>
+
+    <select id="distribution-south" name="DISTRIBUTION_SOUTH" class="search-input">
+        <option value="" selected>Select Distribution South</option>
+        <!-- Options will be populated using JavaScript -->
+    </select>
+</div>
+    <button id="fetchDataBtn">Fetch Data</button>
+    <button id="clearDataBtn">Clear Data</button>
+    <div id="messages"></div>
+    <pre id="data"></pre>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+    // Synchronize the slider and input for Altitudinal Inferior
+    const altInferiorInput = document.getElementById('altitudinal-inferior');
+    const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+    altInferiorInput.addEventListener('input', function() {
+        altInferiorSlider.value = this.value;
+    });
+    altInferiorSlider.addEventListener('input', function() {
+        altInferiorInput.value = this.value;
+    });
+
+    // Synchronize the slider and input for Altitudinal Superior
+    const altSuperiorInput = document.getElementById('altitudinal-superior');
+    const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
+    altSuperiorInput.addEventListener('input', function() {
+        altSuperiorSlider.value = this.value;
+    });
+    altSuperiorSlider.addEventListener('input', function() {
+        altSuperiorInput.value = this.value;
+    });
+
+    document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+    document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+   function fetchData() {
+    const searchParams = new URLSearchParams();
+    // Add all input values to the search parameters only if they have been provided
+    document.querySelectorAll('.search-input').forEach(input => {
+        if (input.value) { // Check if the input has a value
+            searchParams.append(input.name, input.value);
+        }
+    });
+    
+    // Append the altitudinal values only if they are provided
+    const altInferiorValue = altInferiorInput.value;
+    const altSuperiorValue = altSuperiorInput.value;
+    if (altInferiorValue) { // Check if the altitudinal inferior value is provided
+        searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
+    }
+    if (altSuperiorValue) { // Check if the altitudinal superior value is provided
+        searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
+    }
+
+    displayMessage("Fetch button clicked, sending request...");
+
+    // Replace the URL with the appropriate endpoint if necessary
+    fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayMessage("Data received successfully");
+            document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+        })
+        // Clear existing pins
+            map.eachLayer(layer => {
+                if (!!layer.toGeoJSON) map.removeLayer(layer); // Check if layer is a marker and remove
+            });
+            // Assuming 'data' contains an array of distribution codes for pins
+            data.DISTRIBUTION.forEach(distCode => {
+                if (coordinates[distCode]) {
+                    L.marker(coordinates[distCode]).addTo(map)
+                        .bindPopup(distCode); // Or any additional information
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            displayMessage('Fetch error: ' + error.message, true);
+        });
+}
+
+function displayMessage(message, isError = false) {
+    const messageElement = document.getElementById('messages');
+    messageElement.textContent = message;
+    messageElement.style.color = isError ? 'red' : 'green';
+}
+
+function clearData() {
+    document.getElementById('data').textContent = '';
+    document.getElementById('messages').textContent = '';
+    document.querySelectorAll('.search-input').forEach(input => {
+        input.value = '';
+        if (input.type === 'range') {
+            // Reset range inputs to their default values
+            input.value = input.min;
+        }
+    });
+    // Reset the altitudinal inputs separately since they are not part of the '.search-input' class
+    altInferiorInput.value = altInferiorInput.min;
+    altSuperiorInput.value = altSuperiorInput.min;
+}
+// Map Initialization
+        var map = L.map('map').setView([-33.4378, -70.6504], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+      
+        // Region Coordinates and Names
+        const coordinates = {
+            "AYP": [-18.4783, -70.3126], "TAR": [-20.2140, -70.1522], "ANT": [-23.6524, -70.3954],
+            "ATA": [-27.3668, -70.3323], "COQ": [-29.9533, -71.3395],             "VAL": [-33.0472, -71.6127], "RME": [-33.4378, -70.6504], "LBO": [-34.5755, -71.0022],
+            "MAU": [-35.4264, -71.6554], "NUB": [-36.7226, -72.1114], "BIO": [-37.4689, -72.3527],
+            "ARA": [-38.9489, -72.3311], "LRI": [-40.2310, -72.3311], "LLA": [-41.4717, -72.9369],
+            "AIS": [-45.5752, -72.0662], "MAG": [-53.1638, -70.9171], "JFE": [-33.6148, -78.8311],
+            "IPA": [-27.1127, -109.3497], "IDE": [-26.0000, -80.5333]
+        };
+
+      
+        // Populate Distribution dropdowns
+        const distributionNorthSelect = document.getElementById('distribution-north');
+        const distributionSouthSelect = document.getElementById('distribution-south');
+        Object.keys(coordinates).forEach(key => {
+            const optionNorth = document.createElement('option');
+            optionNorth.value = optionNorth.text = key;
+            distributionNorthSelect.appendChild(optionNorth);
+
+            const optionSouth = document.createElement('option');
+            optionSouth.value = optionSouth.text = key;
+            distributionSouthSelect.appendChild(optionSouth);
+        });
+
+      
+        populateDropdown('distribution-north', regionNames.map(region => region.name));
+        populateDropdown('distribution-south', regionNames.map(region => region.name));
+
+
+    // Autocomplete functionality for specific search inputs
+document.querySelectorAll('.search-input').forEach(input => {
+    const dataListId = input.getAttribute('list');
+    const dataList = document.getElementById(dataListId);
+
+    input.addEventListener('input', function() {
+        const value = this.value;
+        if (value.length < 1) {
+            dataList.innerHTML = '';
+            return;
+        }
+        fetch(`https://speciesdb.ddns.net/autocomplete?column=${input.name.toUpperCase()}&prefix=${encodeURIComponent(value)}`)
+            .then(response => response.json())
+            .then(items => {
+                dataList.innerHTML = '';
+                // Limit to the first 10 items
+                items.slice(0, 10).forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    dataList.appendChild(option);
+                });
+                if (!dataList.options.length) {
+                    const option = document.createElement('option');
+                    option.value = "No suggestions found";
+                    option.disabled = true;
+                    dataList.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('Autocomplete error:', error);
+                dataList.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = "Error loading suggestions";
+                option.disabled = true;
+                dataList.appendChild(option);
+            });
+    });
+});
+</script>
+</body>
+</html>
