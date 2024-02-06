@@ -150,34 +150,23 @@
         populateTypeDropdown('type', types);
         populateRegionDropdowns(['distribution-north', 'distribution-south'], coordinates);
 
-        function populateTypeDropdown(selectId, options) {
+function populateDropdown(selectId, options, defaultText) {
             const select = document.getElementById(selectId);
-            for (let category in options) {
-                const group = document.createElement('optgroup');
-                group.label = category;
-                options[category].forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    group.appendChild(optionElement);
-                });
-                select.appendChild(group);
-            }
-        }
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = defaultText;
+            defaultOption.selected = true;
+            select.appendChild(defaultOption);
 
-        function populateRegionDropdowns(ids, coordinates) {
-            ids.forEach(id => {
-                const select = document.getElementById(id);
-                for (let regionCode in coordinates) {
-                    const option = document.createElement('option');
-                    option.value = regionCode;
-                    option.textContent = regionCode + " - " + getRegionName(regionCode);
-                    select.appendChild(option);
-                }
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.code;
+                optionElement.textContent = option.name;
+                select.appendChild(optionElement);
             });
         }
 
-        function getRegionName(code) {
+        function populateRegionDropdowns(ids, coordinates) {
             const regionNames = {
                 "AYP": "Arica y Parinacota", "TAR": "Tarapacá", "ANT": "Antofagasta", "ATA": "Atacama",
                 "COQ": "Coquimbo", "VAL": "Valparaíso", "RME": "Metropolitana de Santiago", "LBO": "Libertador Bernardo O’Higgins",
@@ -185,32 +174,42 @@
                 "LLA": "Los Lagos", "AIS": "Aisén", "MAG": "Magallanes", "JFE": "Juan Fernández",
                 "IPA": "Isla de Pascua", "IDE": "Islas Desventuradas"
             };
-            return regionNames[code] || code;
-        }
-        
-        function populateDropdown(selectId, options) {
-            const select = document.getElementById(selectId);
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option.code; // Use code for value
-                optionElement.textContent = option.name; // Use name for display
-                select.appendChild(optionElement);
+            ids.forEach(id => {
+                const select = document.getElementById(id);
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "";
+                defaultOption.textContent = "Select Region";
+                defaultOption.selected = true;
+                select.appendChild(defaultOption);
+
+                for (let regionCode in coordinates) {
+                    const option = document.createElement('option');
+                    option.value = regionCode;
+                    option.textContent = regionNames[regionCode];
+                    select.appendChild(option);
+                }
             });
         }
 
         function populateTypeDropdown(selectId, typeOptions) {
             const select = document.getElementById(selectId);
-            Object.keys(typeOptions).forEach(type => {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "Select Type";
+            defaultOption.selected = true;
+            select.appendChild(defaultOption);
+
+            for (let typeCategory in typeOptions) {
                 const optgroup = document.createElement('optgroup');
-                optgroup.label = type;
-                typeOptions[type].forEach(option => {
+                optgroup.label = typeCategory;
+                typeOptions[typeCategory].forEach(option => {
                     const optionElement = document.createElement('option');
-                    optionElement.value = option; // Use option text for value
-                    optionElement.textContent = option; // Use option text for display
+                    optionElement.value = option;
+                    optionElement.textContent = option;
                     optgroup.appendChild(optionElement);
                 });
                 select.appendChild(optgroup);
-            });
+            }
         }
         // Function to add markers based on DISTRIBUTION values
         function addMarkers(distribution) {
