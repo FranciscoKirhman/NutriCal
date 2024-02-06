@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Species Database Query with Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Style for slider, input fields, and map */
+        .range-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .range-field input[type=number], .search-input, select {
+            margin: 0 5px;
+            width: auto; /* Adjusted for better display */
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: calc(100% - 180px); /* Adjusted for better display */
+            margin: 0 5px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Species Database Query with Map</h1>
+    <div>
+        <!-- Range fields for Altitudinal -->
+        <div class="range-field">
+            <label for="altitudinal-inferior">Altitudinal Inferior:</label>
+            <input type="number" id="altitudinal-inferior" name="ALTITUDINAL_INFERIOR" value="0">
+            <input type="range" id="altitudinal-inferior-slider" min="0" max="5000" value="0" step="10">
+        </div>
+        <div class="range-field">
+            <label for="altitudinal-superior">Altitudinal Superior:</label>
+            <input type="number" id="altitudinal-superior" name="ALTITUDINAL_SUPERIOR" value="5000">
+            <input type="range" id="altitudinal-superior-slider" min="0" max="5000" value="5000" step="10">
+        </div>
+
+        <!-- Dropdowns for various fields -->
+        <select id="type" name="TYPE" class="search-input">
+            <option value="" selected>Select Type</option>
+            <!-- Options will be populated using JavaScript -->
+        </select>
+
+        <select id="origin" name="ORIGIN" class="search-input">
+            <option value="" selected>Select Origin</option>
+            <!-- Options will be populated using JavaScript -->
+        </select>
+
+        <select id="distribution-north" name="DISTRIBUTION_NORTH" class="search-input">
+            <option value="" selected>Select Distribution North</option>
+            <!-- Options will be populated using JavaScript -->
+        </select>
+
+        <select id="distribution-south" name="DISTRIBUTION_SOUTH" class="search-input">
+            <option value="" selected>Select Distribution South</option>
+            <!-- Options will be populated using JavaScript -->
+        </select>
+
+        <button id="fetchDataBtn">Fetch Data</button>
+        <button id="clearDataBtn">Clear Data</button>
+    </div>
+
+    <div id="messages"></div>
+    <pre id="data"></pre>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([-33.4378, -70.6504], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Coordinates for each region
+        const coordinates = {
+            "AYP": [-18.4783, -70.3126],
+            "TAR": [-20.2140,0],
+                          // ...continuing with the coordinates for each region
+            "ANT": [-23.6524, -70.3954], 
+            "ATA": [-27.3668, -70.3323], 
+            "COQ": [-29.9533, -71.3395], 
+            "VAL": [-33.0472, -71.6127], 
+            "RME": [-33.4378, -70.6504], 
+            "LBO": [-34.5755, -71.0022], 
+            "MAU": [-35.4264, -71.6554], 
+            "NUB": [-36.7226, -72.1114], 
+            "BIO": [-37.4689, -72.3527], 
+            "ARA": [-38.9489, -72.3311], 
+            "LRI": [-40.2310, -72.3311], 
+            "LLA": [-41.4717, -72.9369], 
+            "AIS": [-45.5752, -72.0662], 
+            "MAG": [-53.1638, -70.9171], 
+            "JFE": [-33.6148, -78.8311], 
+            "IPA": [-27.1127, -109.3497], 
+            "IDE": [-26.0000, -80.5333]
+        };
+
+        // Region names mapping
+        const regionNames = {
+            "AYP": "Arica y Parinacota",
+            "TAR": "Tarapacá",
+            "ANT": "Antofagasta",
+            "ATA": "Atacama",
+            "COQ": "Coquimbo",
+            "VAL": "Valparaíso",
+            "RME": "Metropolitana de Santiago",
+            "LBO": "Libertador General Bernardo O'Higgins",
+            "MAU": "Maule",
+            "NUB": "Ñuble",
+            "BIO": "Biobío",
+            "ARA": "Araucanía",
+            "LRI": "Los Ríos",
+            "LLA": "Los Lagos",
+            "AIS": "Aisén",
+            "MAG": "Magallanes",
+            "JFE": "Juan Fernández",
+            "IPA": "Isla de Pascua",
+            "IDE": "Islas Desventuradas"
+        };
+
+        // Function to populate dropdowns with region names
+        function populateRegionDropdowns(ids) {
+            ids.forEach(id => {
+                const select = document.getElementById(id);
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "";
+                defaultOption.textContent = "Select Region";
+                defaultOption.selected = true;
+                select.appendChild(defaultOption);
+
+                Object.entries(regionNames).forEach(([code, name]) => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        // Populate dropdowns on page load
+        populateRegionDropdowns(['distribution-north', 'distribution-south']);
+
+        // Function to populate Type dropdown with nested options
+        const typeOptions = {
+            "Arbustivas": [
+                "Arbustivas", "Arbusto o árbol pequeño", "Arbusto perenne", "Arbusto o subarbusto", 
+                "Arbusto parásito", "Arbusto suculento", "Arbusto trepador", "Arbusto"
+            ],
+            "Hierba": [
+                "Hierba", "Hierba anual", "Hierba bienal", "Hierba anual o bienal", "Hierba anual, bienal o perenne",
+                "Hierba bienal o perenne", "Hierba anual o perenne", "Hierba acuática perenne", "Hierba acuática anual",
+                "Hierba acuática anual o bienal", "Hierba epífita o saxícola perenne", "Hierba epífita o terrestre perenne",
+                "Hierba epífita perenne", "Hierba anual o subarbusto", "Hierba anual, hierba perenne o subarbusto",
+                "Hierba bienal o subarbusto", "Hierba perenne o subarbusto", "Hierba parásita anual",
+                "Hierba parásita perenne", "Hierba saxícola perenne", "Hierba suculenta anual", "Hierba suculenta perenne",
+                "Hierba terrestre o saxícola perenne", "Hierba trepadora anual", "Hierba trepadora anual o bienal",
+                "Hierba trepadora perenne"
+            ],
+            "Subarbusto": [
+                "Subarbusto", "Subarbusto perenne", "Subarbustiva", "Subarbusto epífito o terrestre",
+                "Subarbusto epífito", "Subarbusto parásito", "Subarbusto suculento", "Subarbusto trepador"
+            ],
+            "Árbol": [
+                "Árbol", "Árbol suculento"
+            ]
+        };
+        populateTypeDropdown('type', typeOptions);
+
+        function populateTypeDropdown(selectId, typeOptions) {
+            const select = document.getElementById(selectId);
+            Object.keys(typeOptions).forEach(type => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = type;
+                typeOptions[type].forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    optgroup.appendChild(optionElement);
+                });
+                select.appendChild(optgroup);
+            });
+        }
+
+                // Fetch Data function
+        function fetchData() {
+            const searchParams = new URLSearchParams();
+
+            // Add non-altitudinal input values to the search parameters if provided
+            document.querySelectorAll('.search-input').forEach(input => {
+                let value = input.value.trim();
+                if (input.id === 'distribution-north' || input.id === 'distribution-south') {
+                    // Convert full region names to codes
+                    value = getKeyByValue(regionNames, value);
+                }
+                if (value) {
+                    searchParams.append(input.name, value);
+                }
+            });
+
+            // Only add altitudinal values if they are provided and valid
+            const altInferiorValue = document.getElementById('altitudinal-inferior').value.trim();
+            const altSuperiorValue = document.getElementById('altitudinal-superior').value.trim();
+            if (altInferiorValue) {
+                searchParams.append('ALTITUDINAL_INFERIOR', altInferiorValue);
+            }
+            if (altSuperiorValue) {
+                searchParams.append('ALTITUDINAL_SUPERIOR', altSuperiorValue);
+            }
+
+            displayMessage("Fetching data...", false);
+
+            fetch(`https://speciesdb.ddns.net/query?${searchParams.toString()}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.length > 0) {
+                        displayMessage("Data received successfully", false);
+                        document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                        markers.clearLayers();
+                        data.forEach(item => {
+                            if (item.DISTRIBUTION) {
+                                addMarkers(item.DISTRIBUTION);
+                            }
+                        });
+                    } else {
+                        displayMessage("No data found for the given criteria", false);
+                        document.getElementById('data').textContent = '[]';
+                        markers.clearLayers();
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    displayMessage('Fetch error: ' + error.message, true);
+                });
+        }
+
+        // Helper function to display messages
+        function displayMessage(message, isError) {
+            const messageElement = document.getElementById('messages');
+            messageElement.textContent = message;
+            messageElement.style.color = isError ? 'red' : 'green';
+        }
+
+        // Helper function to clear data
+        function clearData() {
+            document.getElementById('data').textContent = '';
+            displayMessage("", false);
+            document.querySelectorAll('.search-input').forEach(input => {
+                input.value = '';
+                if (input.type === 'range') {
+                    input.value = input.min;
+                }
+            });
+            markers.clearLayers();
+        }
+
+        // Function to add markers based on DISTRIBUTION values
+        function addMarkers(distribution) {
+            distribution.split(', ').forEach(regionCode => {
+                const regionName = regionNames[regionCode];
+                if (regionName && coordinates[regionCode]) {
+                    L.marker(coordinates[regionCode]).addTo(markers);
+                }
+            });
+        }
+
+        // Utility function to find key by value
+        function getKeyByValue(object, value) {
+            return Object.keys(object).find(key => object[key] === value);
+        }
+
+        // Synchronize slider and input for Altitudinal Inferior and Superior
+        const altInferiorInput = document.getElementById('altitudinal-inferior');
+        const altInferiorSlider = document.getElementById('altitudinal-inferior-slider');
+        const altSuperiorInput = document.getElementById('altitudinal-superior');
+        const altSuperiorSlider = document.getElementById('altitudinal-superior-slider');
+
+        function syncSliderInput(slider, input) {
+            input.addEventListener('input', function() {
+                slider.value = this.value;
+            });
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+            });
+        }
+
+        // Initialize synchronization of sliders and inputs
+        syncSliderInput(altInferiorSlider, altInferiorInput);
+        syncSliderInput(altSuperiorSlider, altSuperiorInput);
+
+        // Add event listeners to buttons
+        document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
+        document.getElementById('clearDataBtn').addEventListener('click', clearData);
+
+        // Initialize dropdowns
+        populateTypeDropdown('type', typeOptions);
+        populateRegionDropdowns(['distribution-north', 'distribution-south']);
+    </script>
+</body>
+</html>
+                
+
