@@ -117,7 +117,7 @@
     document.getElementById('fetchDataBtn').addEventListener('click', fetchData);
     document.getElementById('clearDataBtn').addEventListener('click', clearData);
 
-   function fetchData() {
+function fetchData() {
     const searchParams = new URLSearchParams();
     // Add all input values to the search parameters only if they have been provided
     document.querySelectorAll('.search-input').forEach(input => {
@@ -149,18 +149,20 @@
         .then(data => {
             displayMessage("Data received successfully");
             document.getElementById('data').textContent = JSON.stringify(data, null, 2);
-        })
+        
         // Clear existing pins
             map.eachLayer(layer => {
                 if (!!layer.toGeoJSON) map.removeLayer(layer); // Check if layer is a marker and remove
             });
             // Assuming 'data' contains an array of distribution codes for pins
-            data.DISTRIBUTION.forEach(distCode => {
-                if (coordinates[distCode]) {
-                    L.marker(coordinates[distCode]).addTo(map)
-                        .bindPopup(distCode); // Or any additional information
-                }
-            });
+             if (data.DISTRIBUTION) {
+                data.DISTRIBUTION.forEach(distCode => {
+                    if (coordinates[distCode]) {
+                        L.marker(coordinates[distCode]).addTo(map)
+                            .bindPopup(distCode); // Or any additional information
+                    }
+                });
+            }
         })
         .catch(error => {
             console.error('Fetch error:', error);
